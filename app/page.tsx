@@ -5,8 +5,9 @@ type Offer = { titre: string; motif: "defiscalisation" | "energies"; interet: st
 
 // Textes qualitatifs volontairement prudents : faites-les valider, et n'ajoutez des chiffres que s'ils sont justifiables.
 const OFFERS: Offer[] = [
-  { titre: "Pompe à chaleur", motif: "energies", interet: "pompe_a_chaleur", cta: "Être rappelé pour la pompe à chaleur",
-    points: ["Consomme moins d'énergie qu'un chauffage électrique classique", "Chauffe l'hiver et peut rafraîchir l'été (modèles réversibles)", "Des aides peuvent exister selon votre logement et votre situation"] },
+  { titre: "Pompe à chaleur", motif: "energies", interet: "pompe_a_chaleur", cta: "Vérifier mon éligibilité",
+    points: ["Consomme moins d'énergie qu'un chauffage électrique classique", "Chauffe l'hiver et peut rafraîchir l'été (modèles réversibles)", "Des aides peuvent exister selon votre logement et votre situation"],
+    note: "Éligibilité étudiée au cas par cas selon les dispositifs en vigueur. Aucun résultat n'est garanti avant étude de votre dossier." },
   { titre: "Panneaux solaires", motif: "energies", interet: "solaire", cta: "Être rappelé pour le solaire",
     points: ["Produisez une partie de votre propre électricité", "Moins exposé aux hausses du prix de l'énergie", "Le surplus peut être valorisé selon les conditions en vigueur"] },
   { titre: "Défiscalisation", motif: "defiscalisation", interet: "defiscalisation", cta: "Être rappelé pour la défiscalisation",
@@ -23,7 +24,7 @@ const FAQ = [
 export default function Home() {
   return (
     <>
-      <header className="wrap bar"><b className="logo">NomDeVotreMarque</b></header>
+      <header className="wrap bar"><b className="logo"><span className="spark" aria-hidden="true" />Eclafoyer</b></header>
       <main>
         <section className="wrap hero">
           <div>
@@ -58,7 +59,7 @@ export default function Home() {
           {FAQ.map(([q, a]) => (<details key={q}><summary>{q}</summary><p>{a}</p></details>))}
         </section>
       </main>
-      <footer className="wrap foot">[NOM DE VOTRE SOCIÉTÉ] · [Adresse] · [SIREN] · Mentions légales et politique de confidentialité à ajouter</footer>
+      <footer className="wrap foot">Eclafoyer est un site exploité par [NOM DE VOTRE SOCIÉTÉ] · [Adresse] · [SIREN] · Mentions légales et politique de confidentialité à ajouter</footer>
     </>
   );
 }
