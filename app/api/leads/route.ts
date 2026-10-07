@@ -15,6 +15,7 @@ export async function POST(req: Request) {
 
   const { error } = await supabaseAdmin().from("leads").insert({
     ...d,
+    email: d.email || null,
     telephone: normalizePhone(telephone),
     consent_at: new Date().toISOString(),
     consent_version: CONSENT_VERSION,
