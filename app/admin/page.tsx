@@ -12,16 +12,17 @@ export default async function Admin() {
       {error && <p className="err">Lecture impossible : {error.message}</p>}
       <div style={{ overflowX: "auto" }}>
         <table className="tbl">
-          <thead><tr><th>Date</th><th>Motif</th><th>Intérêt</th><th>Nom</th><th>Téléphone</th><th>E-mail</th><th>Ville</th><th>Statut</th></tr></thead>
+          <thead><tr><th>Date</th><th>Motif</th><th>Intérêt</th><th>Réponses</th><th>Nom</th><th>Téléphone</th><th>E-mail</th><th>Ville</th><th>Statut</th></tr></thead>
           <tbody>
             {leads.map((l) => (
               <tr key={l.id}>
                 <td>{new Date(l.created_at).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })}</td>
                 <td>{l.motif === "energies" ? "Énergies" : "Défiscalisation"}</td>
                 <td>{l.simulation?.interet ?? ""}</td>
+                <td>{Object.entries((l.simulation ?? {}) as Record<string, string | number>).filter(([k]) => k !== "interet").map(([k, v]) => `${k}: ${v}`).join(" | ")}</td>
                 <td>{l.prenom} {l.nom}</td>
                 <td><a href={`tel:${l.telephone}`}>{l.telephone}</a></td>
-                <td>{l.email}</td>
+                <td>{l.email ?? ""}</td>
                 <td>{l.code_postal} {l.ville}</td>
                 <td>{l.statut}</td>
               </tr>
