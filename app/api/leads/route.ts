@@ -11,14 +11,14 @@ export async function POST(req: Request) {
   if (!parsed.success) {
     return NextResponse.json({ error: "Certains champs sont invalides.", fields: parsed.error.flatten().fieldErrors }, { status: 422 });
   }
-  const { website, consent: _c, telephone, interet, answers, ...d } = parsed.data;
+  const { website, consent: _c, telephone, interet, answers, rappel_jour, rappel_creneau, ...d } = parsed.data;
   if (website) return NextResponse.json({ ok: true, resultat: RESULTAT_GENERIQUE }); // champ piège : on ignore les robots
 
   const a = answersSchemas[interet].safeParse(answers);
   if (!a.success) return NextResponse.json({ error: "Certaines réponses sont invalides." }, { status: 422 });
 
   // Le profil est calculé côté serveur : les barèmes ne sont jamais envoyés au navigateur.
-  let simulation: Record<string, string | number> = { interet, ...(a.data as Record<string, string | number>) };
+  let simulation: Record<string, string | number> = { interet, ...(a.data as Record<string, string | number>), rappel_jour, rappel_creneau };
   let resultat: Resultat = RESULTAT_GENERIQUE;
   if (interet === "pompe_a_chaleur") {
     const p = a.data as { proprietaire: "oui" | "non"; revenu_fiscal_reference: number; personnes_foyer_fiscal: number };
