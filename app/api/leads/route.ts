@@ -18,7 +18,7 @@ export async function POST(req: Request) {
   if (!a.success) return NextResponse.json({ error: "Certaines réponses sont invalides." }, { status: 422 });
 
   // Le profil est calculé côté serveur : les barèmes ne sont jamais envoyés au navigateur.
-  let simulation: Record<string, string | number> = { interet, ...(a.data as Record<string, string | number>), rappel_jour, rappel_creneau };
+  let simulation: Record<string, string | number> = { interet, ...(a.data as Record<string, string | number>), ...(rappel_jour && rappel_creneau ? { rappel_jour, rappel_creneau } : {}) };
   let resultat: Resultat = RESULTAT_GENERIQUE;
   if (interet === "pompe_a_chaleur") {
     const p = a.data as { proprietaire: "oui" | "non"; revenu_fiscal_reference: number; personnes_foyer_fiscal: number };
