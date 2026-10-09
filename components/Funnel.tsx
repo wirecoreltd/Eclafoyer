@@ -149,7 +149,6 @@ export default function Funnel() {
             </div>
           )}
         </div>
-        <p style={{ fontSize: 12, color: "var(--mut)", lineHeight: 1.5, margin: "12px 0 0" }}>{consentText(pac)}</p>
         <p style={{ fontWeight: 600, margin: "12px 0 0" }}>✓ {GRATUIT}</p>
         <p style={{ marginBottom: 0 }}>Merci {f.prenom}. Un conseiller vous rappelle très vite au numéro indiqué.</p>
       </div>
@@ -240,7 +239,7 @@ export default function Funnel() {
           <label className="chk"><input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
             <span>{consentText(pac)}</span></label>
           {msg && <p className="err" role="alert">{msg}</p>}
-          <button className="btn" disabled={busy}>{busy ? "Envoi…" : "Être rappelé"}</button>
+          <button className="btn" disabled={busy}>{busy ? "Envoi…" : "Envoyer"}</button>
         </form>
       )}
     </div>
