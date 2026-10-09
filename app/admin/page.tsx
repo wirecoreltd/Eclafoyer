@@ -1,4 +1,4 @@
-import { STATUTS, STATUT_LABELS, fetchLeads, phoneNational, readFilters } from "@/lib/leads-admin";
+import { MOTIF_LABEL, STATUTS, STATUT_LABELS, fetchLeads, phoneNational, readFilters } from "@/lib/leads-admin";
 import StatutSelect from "./StatutSelect";
 
 export const dynamic = "force-dynamic";
@@ -28,11 +28,6 @@ export default async function Admin({ searchParams }: { searchParams: Promise<Re
           <option value="">Tous les statuts</option>
           {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
-        <select name="motif" defaultValue={filters.motif ?? ""} style={field}>
-          <option value="">Tous les motifs</option>
-          <option value="energies">Énergies</option>
-          <option value="defiscalisation">Défiscalisation</option>
-        </select>
         <label style={{ display: "flex", alignItems: "center", gap: 6 }}>Du <input type="date" name="du" defaultValue={filters.du} style={field} /></label>
         <label style={{ display: "flex", alignItems: "center", gap: 6 }}>au <input type="date" name="au" defaultValue={filters.au} style={field} /></label>
         <button type="submit" style={button}>Filtrer</button>
@@ -45,7 +40,7 @@ export default async function Admin({ searchParams }: { searchParams: Promise<Re
       <div style={{ overflowX: "auto" }}>
         <table className="tbl">
           <thead>
-            <tr><th>Date</th><th>Rappel souhaité</th><th>Nom</th><th>Téléphone</th><th>E-mail</th><th>Ville</th><th>Motif</th><th>Éligible</th><th>Réponses</th><th>Statut</th></tr>
+            <tr><th>Date</th><th>Rappel souhaité</th><th>Nom</th><th>Téléphone</th><th>E-mail</th><th>Ville</th><th>Motif</th><th>Propriétaire</th><th>Surface (m²)</th><th>Pers. foyer</th><th>Revenu fiscal réf.</th><th>MaPrimeRénov' 5 ans</th><th>Zone</th><th>Profil</th><th>Éligible</th><th>Statut</th></tr>
           </thead>
           <tbody>
             {leads.map((l) => {
@@ -58,14 +53,20 @@ export default async function Admin({ searchParams }: { searchParams: Promise<Re
                   <td><a href={`tel:${l.telephone}`}>{phoneNational(l.telephone)}</a></td>
                   <td>{l.email ? <a href={`mailto:${l.email}`}>{l.email}</a> : ""}</td>
                   <td>{l.code_postal} {l.ville}</td>
-                  <td>{l.motif === "energies" ? "Énergies" : "Défiscalisation"}</td>
+                  <td>{MOTIF_LABEL}</td>
+                  <td>{s.proprietaire ?? ""}</td>
+                  <td>{s.surface_habitable ?? ""}</td>
+                  <td>{s.personnes_foyer_fiscal ?? ""}</td>
+                  <td>{s.revenu_fiscal_reference != null ? Number(s.revenu_fiscal_reference).toLocaleString("fr-FR") + " €" : ""}</td>
+                  <td>{s.maprimerenov_5_ans ?? ""}</td>
+                  <td>{s.zone ?? ""}</td>
+                  <td>{s.profil_maprimerenov ?? ""}</td>
                   <td>{s.eligible_pac_1_euro ?? ""}</td>
-                  <td>{Object.entries(s).filter(([k]) => !["interet", "rappel_date", "rappel_heure", "eligible_pac_1_euro"].includes(k)).map(([k, v]) => `${k}: ${v}`).join(" | ")}</td>
                   <td><StatutSelect id={l.id} value={l.statut ?? "nouveau"} options={options} /></td>
                 </tr>
               );
             })}
-            {leads.length === 0 && <tr><td colSpan={10} style={{ padding: 24, color: "var(--mut)" }}>Aucun lead pour ces filtres.</td></tr>}
+            {leads.length === 0 && <tr><td colSpan={16} style={{ padding: 24, color: "var(--mut)" }}>Aucun lead pour ces filtres.</td></tr>}
           </tbody>
         </table>
       </div>
