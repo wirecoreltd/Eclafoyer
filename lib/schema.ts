@@ -25,13 +25,14 @@ export const leadSchema = z
     telephone: z.string().trim().regex(FR_PHONE),
     consent: z.boolean(),
     preview: z.boolean().optional(), // aperçu du résultat : rien n'est enregistré
-    rappel_jour: z.enum(["semaine", "samedi", "peu_importe"]),
-    rappel_creneau: z.enum(["matin", "midi", "apres_midi", "soir"]),
+    rappel_jour: z.enum(["semaine", "samedi", "peu_importe"]).optional(),
+    rappel_creneau: z.enum(["matin", "midi", "apres_midi", "soir"]).optional(),
     answers: z.record(z.string(), z.union([z.string(), z.number()])),
     website: z.string().optional(),
   })
   .superRefine((d, ctx) => {
     const pac = d.interet === "pompe_a_chaleur";
+    if (!d.preview && (!d.rappel_jour || !d.rappel_creneau)) ctx.addIssue({ code: "custom", path: ["rappel_jour"], message: "Créneau requis" });
     if (!d.preview && d.consent !== true) ctx.addIssue({ code: "custom", path: ["consent"], message: "Consentement requis" });
     // E-mail obligatoire sauf pour le questionnaire pompe à chaleur, où il est facultatif.
     if ((!pac || d.email) && !EMAIL.test(d.email)) ctx.addIssue({ code: "custom", path: ["email"], message: "E-mail invalide" });
