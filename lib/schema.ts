@@ -24,6 +24,8 @@ export const leadSchema = z
     email: z.string().trim().toLowerCase().max(200).optional().default(""),
     telephone: z.string().trim().regex(FR_PHONE),
     consent: z.literal(true),
+    rappel_jour: z.enum(["semaine", "samedi", "peu_importe"]),
+    rappel_creneau: z.enum(["matin", "midi", "apres_midi", "soir"]),
     answers: z.record(z.string(), z.union([z.string(), z.number()])),
     website: z.string().optional(),
   })
