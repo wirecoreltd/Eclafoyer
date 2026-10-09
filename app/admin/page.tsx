@@ -52,7 +52,8 @@ export default async function Admin({ searchParams }: { searchParams: Promise<Re
                   <td>{l.prenom} {l.nom}</td>
                   <td><a href={`tel:${l.telephone}`}>{phoneNational(l.telephone)}</a></td>
                   <td>{l.email ? <a href={`mailto:${l.email}`}>{l.email}</a> : ""}</td>
-                  <td>{l.code_postal} {l.ville}</td>
+                  <td>{l.code_postal}</td>
+                  <td>{l.ville}</td>
                   <td>{MOTIF_LABEL}</td>
                   <td>{s.proprietaire ?? ""}</td>
                   <td>{s.surface_habitable ?? ""}</td>
