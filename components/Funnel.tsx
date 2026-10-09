@@ -172,7 +172,6 @@ export default function Funnel() {
             </div>
           )}
         </div>
-        <p style={{ fontWeight: 600, margin: "12px 0 0" }}>✓ {GRATUIT}</p>
         <h3 style={{ fontSize: 16, margin: "10px 0" }}>Quand êtes-vous disponible pour être rappelé(e) ? *</h3>
             <div className="grid">
               <label>Jour
