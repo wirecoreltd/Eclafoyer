@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { CONSENT_VERSION, answersSchemas, leadSchema, normalizePhone } from "@/lib/schema";
-import { RESULTAT_GENERIQUE, evaluerPac, type Resultat } from "@/lib/profil";
+import { CONSENT_VERSION, leadSchema, normalizePhone } from "@/lib/schema";
+import { RESULTAT_GENERIQUE, evaluerPac } from "@/lib/profil";
 import { supabaseAdmin } from "@/lib/supabase";
 
 export async function POST(req: Request) {
@@ -11,27 +11,33 @@ export async function POST(req: Request) {
   if (!parsed.success) {
     return NextResponse.json({ error: "Certains champs sont invalides.", fields: parsed.error.flatten().fieldErrors }, { status: 422 });
   }
-  const { website, consent: _c, preview, telephone, interet, answers, rappel_date, rappel_heure, ...d } = parsed.data;
+  const { website, consent: _c, preview, telephone, answers, rappel_date, rappel_heure, ...d } = parsed.data;
   if (website) return NextResponse.json({ ok: true, resultat: RESULTAT_GENERIQUE }); // champ piège : on ignore les robots
 
-  const a = answersSchemas[interet].safeParse(answers);
-  if (!a.success) return NextResponse.json({ error: "Certaines réponses sont invalides." }, { status: 422 });
-
   // Le profil est calculé côté serveur : les barèmes ne sont jamais envoyés au navigateur.
-  let simulation: Record<string, string | number> = { interet, ...(a.data as Record<string, string | number>), ...(rappel_date && rappel_heure ? { rappel_date, rappel_heure } : {}) };
-  let resultat: Resultat = RESULTAT_GENERIQUE;
-  if (interet === "pompe_a_chaleur") {
-    const p = a.data as { proprietaire: "oui" | "non"; revenu_fiscal_reference: number; personnes_foyer_fiscal: number };
-    const ev = evaluerPac({ rfr: p.revenu_fiscal_reference, personnes: p.personnes_foyer_fiscal, codePostal: d.code_postal, proprietaire: p.proprietaire });
-    simulation = { ...simulation, zone: ev.zone, profil_maprimerenov: ev.profil, eligible_pac_1_euro: ev.resultat.eligible ? "oui" : "non" };
-    resultat = ev.resultat;
-  }
+  const ev = evaluerPac({
+    rfr: answers.revenu_fiscal_reference,
+    personnes: answers.personnes_foyer_fiscal,
+    codePostal: d.code_postal,
+    proprietaire: answers.proprietaire,
+  });
 
   // Aperçu : on calcule le résultat mais on n'enregistre rien tant que la personne n'a pas donné son accord.
-  if (preview) return NextResponse.json({ ok: true, resultat });
+  if (preview) return NextResponse.json({ ok: true, resultat: ev.resultat });
+
+  const simulation: Record<string, unknown> = {
+    interet: "pompe_a_chaleur",
+    ...answers,
+    zone: ev.zone,
+    profil_maprimerenov: ev.profil,
+    eligible_pac_1_euro: ev.resultat.eligible ? "oui" : "non",
+    rappel_date,
+    rappel_heure,
+  };
 
   const { error } = await supabaseAdmin().from("leads").insert({
     ...d,
+    motif: "energies",
     email: d.email || null,
     telephone: normalizePhone(telephone),
     simulation,
@@ -42,5 +48,5 @@ export async function POST(req: Request) {
     console.error("insert lead:", error.message);
     return NextResponse.json({ error: "Enregistrement impossible. Réessayez dans un instant." }, { status: 500 });
   }
-  return NextResponse.json({ ok: true, resultat });
+  return NextResponse.json({ ok: true, resultat: ev.resultat });
 }
