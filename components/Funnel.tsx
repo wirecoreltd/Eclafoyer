@@ -1,9 +1,8 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
-type Motif = "defiscalisation" | "energies";
 type YN = "" | "oui" | "non";
-type Resultat = { eligible: boolean; titre: string; message: string; detail: string; profil?: string; profilLibelle?: string };
+type Resultat = { eligible: boolean; titre: string; message: string; detail: string; profil?: string };
 const eur = (n: number) => n.toLocaleString("fr-FR") + " €";
 const FIELDS: [string, string, string, string][] = [
   ["prenom", "Prénom", "given-name", "text"],
@@ -11,21 +10,16 @@ const FIELDS: [string, string, string, string][] = [
   ["adresse", "Adresse", "street-address", "text"],
   ["code_postal", "Code postal", "postal-code", "text"],
   ["ville", "Ville", "address-level2", "text"],
-  ["email", "E-mail", "email", "email"],
+  ["email", "E-mail (facultatif)", "email", "email"],
   ["telephone", "Téléphone", "tel", "tel"],
 ];
-const CHOICES: [string, Motif, string, string][] = [
-  ["pac", "energies", "pompe_a_chaleur", "Pompe à chaleur : vérifier mon éligibilité aux aides"],
-  ["solaire", "energies", "solaire", "Panneaux solaires"],
-  ["defisc", "defiscalisation", "defiscalisation", "Défiscalisation"],
-];
-const consentText = (pac: boolean) =>
-  `J'accepte d'être contacté(e) par téléphone${pac ? "" : " et par e-mail"} par [NOM DE VOTRE SOCIÉTÉ] au sujet de ma demande, et que les informations saisies (dont mes revenus) soient utilisées pour étudier mon éligibilité. Mes données sont conservées 3 ans maximum ; je peux exercer mes droits en écrivant à [E-MAIL DPO].`;
+const CONSENT =
+  "J'accepte d'être contacté(e) par téléphone par [NOM DE VOTRE SOCIÉTÉ] au sujet de ma demande, et que les informations saisies (dont mes revenus) soient utilisées pour étudier mon éligibilité. Mes données sont conservées 3 ans maximum ; je peux exercer mes droits en écrivant à [E-MAIL DPO].";
 const GRATUIT = "Ce sondage est totalement gratuit et ne vous engage à rien.";
 const HEURES = ["09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00"];
 const heureLabel = (h: string) => h.replace(":", "h");
 const dateLabel = (d: string) => new Date(d + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
-const BADGE: Record<string, [string, string]> = { bleu: ["#1D4ED8", "#fff"], jaune: ["#FACC15", "#10282e"], violet: ["#7C3AED", "#fff"], rose: ["#DB2777", "#fff"] };
+const BADGE: Record<string, [string, string]> = { bleu: ["#1D4ED8", "#fff"], jaune: ["#FACC15", "#10242C"], violet: ["#7C3AED", "#fff"], rose: ["#DB2777", "#fff"] };
 
 function YesNoSelect({ label, value, onChange, required }: { label: string; value: YN; onChange: (v: YN) => void; required?: boolean }) {
   return (
@@ -38,59 +32,33 @@ function YesNoSelect({ label, value, onChange, required }: { label: string; valu
 }
 
 export default function Funnel() {
-  const [step, setStep] = useState(1); // 1 choix · 2 formulaire · 3 résultat + récapitulatif + consentement
-  const [interet, setInteret] = useState("");
-  const [motif, setMotif] = useState<Motif | null>(null);
+  const [step, setStep] = useState(1); // 1 formulaire · 2 résultat + récapitulatif + consentement
   const [f, setF] = useState<Record<string, string>>({});
   const [consent, setConsent] = useState(false);
   const [hp, setHp] = useState("");
   const [date, setDate] = useState("");
   const [heure, setHeure] = useState("");
-  // Questionnaire pompe à chaleur
   const [proprio, setProprio] = useState<YN>("");
   const [surface, setSurface] = useState("");
   const [rfr, setRfr] = useState("");
   const [nbPers, setNbPers] = useState("");
   const [mpr, setMpr] = useState<YN>("");
-  // Autres questionnaires
-  const [facture, setFacture] = useState(2000);
-  const [logement, setLogement] = useState("Maison");
-  const [statut, setStatut] = useState("Propriétaire");
-  const [revenu, setRevenu] = useState(50000);
-  const [foyer, setFoyer] = useState("Célibataire");
-
   const [errs, setErrs] = useState<Record<string, string[]>>({});
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const [res, setRes] = useState<Resultat | null>(null);
-  const pac = interet === "pompe_a_chaleur";
-
-  // Les boutons « Vérifier / Être rappelé pour… » de la page présélectionnent le motif et passent au formulaire.
-  useEffect(() => {
-    const h = (e: Event) => {
-      const d = (e as CustomEvent).detail as { motif: Motif; interet: string };
-      setMotif(d.motif); setInteret(d.interet); setRes(null); setDone(false); setMsg(""); setStep(2);
-    };
-    window.addEventListener("choose-motif", h);
-    return () => window.removeEventListener("choose-motif", h);
-  }, []);
-
-  function pickChoice(m: Motif, i: string) { setMotif(m); setInteret(i); }
 
   function fail(m: string) { setMsg(m); return null; }
   function buildAnswers(): Record<string, string | number> | null {
-    if (pac) {
-      const s = Number(surface), n = Number(nbPers), r = Number(rfr);
-      if (!proprio) return fail("Indiquez si vous êtes propriétaire.");
-      if (surface === "" || !Number.isFinite(s) || s < 9 || s > 2000) return fail("Indiquez une surface habitable valide (en m²).");
-      if (nbPers === "" || !Number.isInteger(n) || n < 1 || n > 20) return fail("Indiquez le nombre de personnes de votre foyer fiscal.");
-      if (rfr === "" || !Number.isFinite(r) || r < 0) return fail("Indiquez votre revenu fiscal de référence (sur votre avis d'imposition).");
-      const a: Record<string, string | number> = { proprietaire: proprio, surface_habitable: s, personnes_foyer_fiscal: n, revenu_fiscal_reference: r };
-      if (mpr) a.maprimerenov_5_ans = mpr;
-      return a;
-    }
-    return motif === "energies" ? { logement, statut, facture_annuelle: facture } : { foyer, revenu_imposable: revenu };
+    const s = Number(surface), n = Number(nbPers), r = Number(rfr);
+    if (!proprio) return fail("Indiquez si vous êtes propriétaire.");
+    if (surface === "" || !Number.isFinite(s) || s < 9 || s > 2000) return fail("Indiquez une surface habitable valide (en m²).");
+    if (nbPers === "" || !Number.isInteger(n) || n < 1 || n > 20) return fail("Indiquez le nombre de personnes de votre foyer fiscal.");
+    if (rfr === "" || !Number.isFinite(r) || r < 0) return fail("Indiquez votre revenu fiscal de référence (sur votre avis d'imposition).");
+    const a: Record<string, string | number> = { proprietaire: proprio, surface_habitable: s, personnes_foyer_fiscal: n, revenu_fiscal_reference: r };
+    if (mpr) a.maprimerenov_5_ans = mpr;
+    return a;
   }
 
   async function send(consentOk: boolean, preview: boolean) {
@@ -100,7 +68,7 @@ export default function Funnel() {
     try {
       const r = await fetch("/api/leads", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...f, motif, interet, answers, rappel_date: date || undefined, rappel_heure: heure || undefined, consent: consentOk, preview, website: hp }),
+        body: JSON.stringify({ ...f, answers, rappel_date: date || undefined, rappel_heure: heure || undefined, consent: consentOk, preview, website: hp }),
       });
       const j = await r.json().catch(() => ({}));
       if (r.ok && j.resultat) { setBusy(false); return j.resultat as Resultat; }
@@ -110,69 +78,62 @@ export default function Funnel() {
     return null;
   }
 
-  // Étape 2 → calcule le résultat côté serveur (rien n'est enregistré à ce stade).
+  // Étape 1 → le serveur calcule le résultat (rien n'est enregistré à ce stade).
   async function showRecap(e: React.FormEvent) {
     e.preventDefault();
     setMsg(""); setErrs({});
-    const required = ["prenom", "nom", "adresse", "code_postal", "ville", "telephone", ...(pac ? [] : ["email"])];
+    const required = ["prenom", "nom", "adresse", "code_postal", "ville", "telephone"];
     if (required.some((k) => !(f[k] ?? "").trim())) return setMsg("Merci de remplir tous les champs obligatoires.");
     const r = await send(false, true);
-    if (r) { setRes(r); setConsent(false); setStep(3); }
+    if (r) { setRes(r); setConsent(false); setStep(2); }
   }
 
-  // Étape 3 → le consentement donné en fin de récapitulatif finalise le sondage et enregistre la demande.
+  // Étape 2 → le consentement donné en fin de récapitulatif finalise le sondage et enregistre la demande.
   async function finalize() {
     setMsg("");
     if (!date || !heure) return setMsg("Choisissez la date et l'heure de votre rappel.");
     if (!consent) return setMsg("Cochez la case ci-dessus pour finaliser le sondage.");
     const r = await send(true, false);
-    if (r) setDone(true);
+    if (r) { setDone(true); setErrs({}); }
   }
 
-  const row = (k: string, v: string) => (
-    <div key={k} style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 14, padding: "9px 0", borderBottom: "1px solid var(--line)" }}>
-      <span style={{ color: "var(--mut)" }}>{k}</span><span style={{ fontWeight: 600, textAlign: "right" }}>{v}</span>
-    </div>
-  );
-
-  if (step === 3 && res && done) {
+  if (step === 2 && res && done) {
     return (
       <div className="card" role="status">
         <h2>Sondage finalisé, merci {f.prenom} !</h2>
         <p>Un conseiller vous rappelle au numéro indiqué le {dateLabel(date)} à {heureLabel(heure)}.</p>
-        <p style={{ fontWeight: 600, marginBottom: 0 }}>✓ {GRATUIT}</p>
+        <p className="strong">✓ {GRATUIT}</p>
       </div>
     );
   }
 
-  if (step === 3 && res) {
+  if (step === 2 && res) {
     const rows: [string, string][] = [
-      ["Nom", `${f.prenom ?? ""} ${f.nom ?? ""}`], ["Adresse", `${f.adresse ?? ""}, ${f.code_postal ?? ""} ${f.ville ?? ""}`], ["Téléphone", f.telephone ?? ""],
+      ["Nom", `${f.prenom ?? ""} ${f.nom ?? ""}`],
+      ["Adresse", `${f.adresse ?? ""}, ${f.code_postal ?? ""} ${f.ville ?? ""}`],
+      ["Téléphone", f.telephone ?? ""],
       ...(f.email ? ([["E-mail", f.email]] as [string, string][]) : []),
-      ...(pac
-        ? ([["Propriétaire", proprio === "oui" ? "Oui" : "Non"], ["Surface habitable", `${surface} m²`], ["Personnes du foyer fiscal", nbPers], ["Revenu fiscal de référence", eur(Number(rfr))],
-            ...(mpr ? [["MaPrimeRénov' (5 ans)", mpr === "oui" ? "Oui" : "Non"]] : [])] as [string, string][])
-        : motif === "energies"
-        ? ([["Logement", logement], ["Statut", statut], ["Facture d'énergie annuelle", eur(facture)]] as [string, string][])
-        : ([["Foyer", foyer], ["Revenu net imposable", eur(revenu)]] as [string, string][])),
+      ["Propriétaire", proprio === "oui" ? "Oui" : "Non"],
+      ["Surface habitable", `${surface} m²`],
+      ["Personnes du foyer fiscal", nbPers],
+      ["Revenu fiscal de référence", eur(Number(rfr))],
+      ...(mpr ? ([["MaPrimeRénov' (5 ans)", mpr === "oui" ? "Oui" : "Non"]] as [string, string][]) : []),
     ];
     const [bg, fg] = BADGE[res.profil ?? ""] ?? ["", ""];
     return (
       <div className="card" role="status">
-        <small className="mut" style={{ textTransform: "uppercase", letterSpacing: ".04em", fontWeight: 700 }}>Votre résultat</small>
+        <small className="kicker">Votre résultat</small>
         <h2>{res.titre}</h2>
-        <div className="res"><strong>{res.message}</strong><small>{res.detail}</small></div>
-        <div style={{ border: "1px solid var(--line)", borderRadius: 12, padding: "6px 16px 14px", marginTop: 16 }}>
-          <div style={{ fontWeight: 700, padding: "10px 0 4px" }}>Récapitulatif de votre demande</div>
-          {rows.map(([k, v]) => row(k, v))}
+        <div className={"res" + (res.eligible ? " ok" : "")}><strong>{res.message}</strong><small>{res.detail}</small></div>
+        <div className="recap">
+          <div className="recap-t">Récapitulatif de votre demande</div>
+          {rows.map(([k, v]) => (<div className="row" key={k}><span>{k}</span><b>{v}</b></div>))}
           {res.profil && (
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 12 }}>
-              <span style={{ color: "var(--mut)", fontSize: 14 }}>Votre profil</span>
-              <span style={{ background: bg, color: fg, fontWeight: 700, fontSize: 14, padding: "4px 12px", borderRadius: 999 }}>Profil {res.profil}</span>
-            </div>
+            <div className="row last"><span>Votre profil</span><b className="badge" style={{ background: bg, color: fg }}>Profil {res.profil}</b></div>
           )}
         </div>
-        <p style={{ fontWeight: 600, margin: "16px 0 10px" }}>Un conseiller prendra contact avec vous à l'heure de votre choix afin de discuter de la faisabilité de votre projet.</p>
+
+        <p className="strong" style={{ margin: "18px 0 10px" }}>Un conseiller prendra contact avec vous à l'heure de votre choix afin de discuter de la faisabilité de votre projet.</p>
         <div className="grid">
           <label>Date *
             <input type="date" min={new Date().toISOString().slice(0, 10)} value={date} onChange={(e) => setDate(e.target.value)} />
@@ -183,86 +144,50 @@ export default function Funnel() {
             </select>
           </label>
         </div>
-        <label className="chk" style={{ marginTop: 16 }}><input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
-          <span>{consentText(pac)}</span></label>
+
+        <label className="chk"><input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} /><span>{CONSENT}</span></label>
         {msg && <p className="err" role="alert">{msg}</p>}
         <button className="btn" disabled={busy} onClick={finalize}>{busy ? "Envoi…" : "Envoyer"}</button>
-        <button type="button" onClick={() => { setMsg(""); setStep(2); }} style={{ display: "block", margin: "12px auto 0", background: "none", border: 0, color: "var(--mut)", textDecoration: "underline", cursor: "pointer", font: "inherit", fontSize: 14 }}>Modifier mes réponses</button>
+        <button type="button" className="linkbtn" onClick={() => { setMsg(""); setStep(1); }}>Modifier mes réponses</button>
       </div>
     );
   }
 
   return (
-    <div className="card">
-      <div className="prog"><i style={{ width: `${step * 33.3}%` }} /></div>
+    <form className="card" onSubmit={showRecap} noValidate>
+      <div className="prog"><i style={{ width: "50%" }} /></div>
+      <h2>Vérifiez votre éligibilité</h2>
+      <p className="mut">Quelques questions pour savoir si vous pouvez bénéficier de l'offre pompe à chaleur. Un conseiller vous rappelle ensuite.</p>
+      <p className="strong">✓ {GRATUIT}</p>
 
-      {step === 1 && (
-        <>
-          <h2>Simulez votre situation</h2>
-          <p className="mut">Que souhaitez-vous étudier ?</p>
-          <div className="choices">
-            {CHOICES.map(([k, m, i, l]) => (
-              <button key={k} type="button" aria-pressed={interet === i} className={"choice" + (interet === i ? " on" : "")} onClick={() => pickChoice(m, i)}>{l}</button>
-            ))}
-          </div>
-          <button className="btn" disabled={!motif} onClick={() => setStep(2)}>Continuer</button>
-        </>
-      )}
+      <h3 className="sub">Vos coordonnées</h3>
+      <div className="grid">
+        {FIELDS.map(([k, label, ac, type]) => (
+          <label key={k} className={k === "adresse" ? "full" : ""}>{label}{k === "email" ? "" : " *"}
+            <input name={k} type={type} autoComplete={ac} required={k !== "email"} value={f[k] ?? ""} onChange={(e) => setF({ ...f, [k]: e.target.value })} aria-invalid={!!errs[k]} />
+            {errs[k] && <span className="err">Valeur invalide</span>}
+          </label>
+        ))}
+      </div>
 
-      {step === 2 && (
-        <form onSubmit={showRecap} noValidate>
-          <h2>{pac ? "Vérifiez votre éligibilité" : "Votre étude gratuite"}</h2>
-          <p className="mut">{pac ? "Quelques questions pour savoir si vous pouvez bénéficier de l'offre pompe à chaleur. Un conseiller vous rappelle ensuite." : "Remplissez ce formulaire : un conseiller vous rappelle ensuite."}</p>
-          <p className="mut" style={{ fontWeight: 600 }}>✓ {GRATUIT}</p>
-          <h3 style={{ fontSize: 16, margin: "6px 0 10px" }}>Vos coordonnées</h3>
-          <div className="grid">
-            {FIELDS.map(([k, label, ac, type]) => (
-              <label key={k} className={k === "adresse" ? "full" : ""}>{label}{k === "email" && pac ? " (facultatif)" : " *"}
-                <input name={k} type={type} autoComplete={ac} required value={f[k] ?? ""} onChange={(e) => setF({ ...f, [k]: e.target.value })} aria-invalid={!!errs[k]} />
-                {errs[k] && <span className="err">Valeur invalide</span>}
-              </label>
-            ))}
-          </div>
+      <h3 className="sub">Votre logement et votre foyer</h3>
+      <YesNoSelect label="Êtes-vous propriétaire de votre logement ?" required value={proprio} onChange={setProprio} />
+      {proprio === "non" && <p className="warn">Les aides à la rénovation concernent en général les propriétaires. Un conseiller pourra vous indiquer ce qui s'applique à votre cas.</p>}
+      <label>Surface habitable (m²) *
+        <input type="number" inputMode="numeric" min={9} max={2000} value={surface} onChange={(e) => setSurface(e.target.value)} />
+      </label>
+      <label>Nombre de personnes dans le foyer fiscal *
+        <input type="number" inputMode="numeric" min={1} max={20} value={nbPers} onChange={(e) => setNbPers(e.target.value)} />
+      </label>
+      <label>Revenu fiscal de référence (€) *
+        <input type="number" inputMode="numeric" min={0} value={rfr} onChange={(e) => setRfr(e.target.value)} />
+        <small className="help">Indiqué sur votre dernier avis d'imposition.</small>
+      </label>
+      <YesNoSelect label="Avez-vous déjà bénéficié de MaPrimeRénov' ces 5 dernières années ?" value={mpr} onChange={setMpr} />
 
-          {pac && (
-            <>
-              <h3 style={{ fontSize: 16, margin: "10px 0" }}>Votre logement et votre foyer</h3>
-              <YesNoSelect label="Êtes-vous propriétaire de votre logement ?" required value={proprio} onChange={setProprio} />
-              {proprio === "non" && <p className="warn">Les aides à la rénovation concernent en général les propriétaires. Un conseiller pourra vous indiquer ce qui s'applique à votre cas.</p>}
-              <label>Surface habitable (m²) *
-                <input type="number" inputMode="numeric" min={9} max={2000} value={surface} onChange={(e) => setSurface(e.target.value)} />
-              </label>
-              <label>Nombre de personnes dans le foyer fiscal *
-                <input type="number" inputMode="numeric" min={1} max={20} value={nbPers} onChange={(e) => setNbPers(e.target.value)} />
-              </label>
-              <label>Revenu fiscal de référence (€) *
-                <input type="number" inputMode="numeric" min={0} value={rfr} onChange={(e) => setRfr(e.target.value)} />
-                <small className="help">Indiqué sur votre dernier avis d'imposition.</small>
-              </label>
-              <YesNoSelect label="Avez-vous déjà bénéficié de MaPrimeRénov' ces 5 dernières années ?" value={mpr} onChange={setMpr} />
-            </>
-          )}
-          {!pac && motif === "energies" && (
-            <>
-              <h3 style={{ fontSize: 16, margin: "10px 0" }}>Votre logement</h3>
-              <label>Type<select value={logement} onChange={(e) => setLogement(e.target.value)}><option>Maison</option><option>Appartement</option></select></label>
-              <label>Vous êtes<select value={statut} onChange={(e) => setStatut(e.target.value)}><option>Propriétaire</option><option>Locataire</option></select></label>
-              <label>Facture d'énergie annuelle : {eur(facture)}<input type="range" min={500} max={5000} step={100} value={facture} onChange={(e) => setFacture(+e.target.value)} /></label>
-            </>
-          )}
-          {!pac && motif === "defiscalisation" && (
-            <>
-              <h3 style={{ fontSize: 16, margin: "10px 0" }}>Votre situation</h3>
-              <label>Foyer<select value={foyer} onChange={(e) => setFoyer(e.target.value)}><option>Célibataire</option><option>En couple</option></select></label>
-              <label>Revenu net imposable annuel : {eur(revenu)}<input type="range" min={20000} max={200000} step={5000} value={revenu} onChange={(e) => setRevenu(+e.target.value)} /></label>
-            </>
-          )}
-
-          <input className="hp" tabIndex={-1} autoComplete="off" aria-hidden value={hp} onChange={(e) => setHp(e.target.value)} name="website" />
-          {msg && <p className="err" role="alert">{msg}</p>}
-          <button className="btn" disabled={busy}>{busy ? "Calcul…" : "Voir mon résultat"}</button>
-        </form>
-      )}
-    </div>
+      <input className="hp" tabIndex={-1} autoComplete="off" aria-hidden value={hp} onChange={(e) => setHp(e.target.value)} name="website" />
+      {msg && <p className="err" role="alert">{msg}</p>}
+      <button className="btn" disabled={busy}>{busy ? "Calcul…" : "Voir mon résultat"}</button>
+    </form>
   );
 }
