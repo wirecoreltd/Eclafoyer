@@ -43,9 +43,9 @@ export function evaluerPac(p: { rfr: number; personnes: number; codePostal: stri
   const eligible = profil === "bleu" && p.proprietaire === "oui";
   const base = { eligible, profil, profilLibelle: LIBELLES[profil] };
   const resultat: Resultat = eligible
-    ? { ...base, titre: "Bonne nouvelle, vous semblez éligible",
-        message: `Pompe à chaleur d'environ ${eur(PAC_COUT)} : reste à charge estimé de ${eur(PAC_RESTE_A_CHARGE_BLEU)}`,
-        detail: "Estimation indicative, sous réserve d'éligibilité et de validation de votre dossier par un conseiller (logement, travaux, aides en vigueur)." }
+    ? { ...base, titre: "Bonne nouvelle, vous êtes éligible à la pompe à chaleur à 1 € symbolique",
+        message: "Profil bleu : votre pompe à chaleur ne vous coûte que 1 €",
+        detail: `Pompe à chaleur d'environ ${eur(PAC_COUT)}, installée pour ${eur(PAC_RESTE_A_CHARGE_BLEU)} symbolique. Sous réserve de validation de votre dossier par un conseiller.` }
     : { ...base, titre: "Merci, votre demande est enregistrée",
         message: "Après analyse de votre dossier, un reste à charge est à prévoir",
         detail: "Un conseiller vous rappelle pour en parler avec vous et étudier les aides qui s'appliquent à votre situation." };
