@@ -43,6 +43,23 @@ export async function fetchLeads(f: Filters, limit = 1000) {
   return query;
 }
 
+// Récupère des leads précis (sélection cochée). On découpe en paquets pour ne pas dépasser la taille d'URL de Supabase.
+export async function fetchLeadsByIds(ids: string[]) {
+  const all: Record<string, any>[] = [];
+  for (let i = 0; i < ids.length; i += 150) {
+    const { data, error } = await supabaseAdmin().from("leads").select("*").in("id", ids.slice(i, i + 150));
+    if (error) return { data: null, error };
+    all.push(...(data ?? []));
+  }
+  all.sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+  return { data: all, error: null };
+}
+
+// Leads précis (export de la sélection cochée dans le tableau)
+export async function fetchLeadsByIds(ids: string[]) {
+  return supabaseAdmin().from("leads").select("*").in("id", ids).order("created_at", { ascending: false }).limit(10000);
+}
+
 // ---- CSV (séparateur ";" + BOM : s'ouvre directement dans Excel FR) ----
 const FORMULA_START = /^[=+\-@\t\r]/;
 export function csvCell(v: unknown): string {
@@ -60,7 +77,7 @@ export function leadsToCsv(leads: Lead[]): string {
   const rows = leads.map((l) => {
     const s = (l.simulation ?? {}) as Record<string, unknown>;
     return [
-      new Date(l.created_at).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" }),
+      new Date(l.created_at).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short", timeZone: "Europe/Paris" }),
       l.prenom, l.nom, phoneNational(l.telephone), l.email, l.adresse, l.code_postal, l.ville,
       MOTIF_LABEL, l.statut, s.rappel_date, s.rappel_heure,
       s.proprietaire, s.surface_habitable, s.personnes_foyer_fiscal, s.revenu_fiscal_reference,
