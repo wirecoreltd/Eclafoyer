@@ -19,12 +19,12 @@ const CHOICES: [string, Motif, string, string][] = [
   ["solaire", "energies", "solaire", "Panneaux solaires"],
   ["defisc", "defiscalisation", "defiscalisation", "Défiscalisation"],
 ];
-const JOURS: [string, string][] = [["semaine", "En semaine (lundi au vendredi)"], ["samedi", "Le samedi"], ["peu_importe", "Peu importe"]];
-const CRENEAUX: [string, string][] = [["matin", "Matin (9h–12h)"], ["midi", "Midi (12h–14h)"], ["apres_midi", "Après-midi (14h–18h)"], ["soir", "Soirée (18h–20h)"]];
 const consentText = (pac: boolean) =>
   `J'accepte d'être contacté(e) par téléphone${pac ? "" : " et par e-mail"} par [NOM DE VOTRE SOCIÉTÉ] au sujet de ma demande, et que les informations saisies (dont mes revenus) soient utilisées pour étudier mon éligibilité. Mes données sont conservées 3 ans maximum ; je peux exercer mes droits en écrivant à [E-MAIL DPO].`;
 const GRATUIT = "Ce sondage est totalement gratuit et ne vous engage à rien.";
-const lib = (list: [string, string][], v: string) => list.find(([k]) => k === v)?.[1] ?? "";
+const HEURES = ["09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00"];
+const heureLabel = (h: string) => h.replace(":", "h");
+const dateLabel = (d: string) => new Date(d + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
 const BADGE: Record<string, [string, string]> = { bleu: ["#1D4ED8", "#fff"], jaune: ["#FACC15", "#10282e"], violet: ["#7C3AED", "#fff"], rose: ["#DB2777", "#fff"] };
 
 function YesNoSelect({ label, value, onChange, required }: { label: string; value: YN; onChange: (v: YN) => void; required?: boolean }) {
@@ -44,8 +44,8 @@ export default function Funnel() {
   const [f, setF] = useState<Record<string, string>>({});
   const [consent, setConsent] = useState(false);
   const [hp, setHp] = useState("");
-  const [jour, setJour] = useState("");
-  const [creneau, setCreneau] = useState("");
+  const [date, setDate] = useState("");
+  const [heure, setHeure] = useState("");
   // Questionnaire pompe à chaleur
   const [proprio, setProprio] = useState<YN>("");
   const [surface, setSurface] = useState("");
@@ -100,7 +100,7 @@ export default function Funnel() {
     try {
       const r = await fetch("/api/leads", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...f, motif, interet, answers, rappel_jour: jour || undefined, rappel_creneau: creneau || undefined, consent: consentOk, preview, website: hp }),
+        body: JSON.stringify({ ...f, motif, interet, answers, rappel_date: date || undefined, rappel_heure: heure || undefined, consent: consentOk, preview, website: hp }),
       });
       const j = await r.json().catch(() => ({}));
       if (r.ok && j.resultat) { setBusy(false); return j.resultat as Resultat; }
@@ -123,7 +123,7 @@ export default function Funnel() {
   // Étape 3 → le consentement donné en fin de récapitulatif finalise le sondage et enregistre la demande.
   async function finalize() {
     setMsg("");
-    if (!jour || !creneau) return setMsg("Indiquez quand vous souhaitez être rappelé(e).");
+    if (!date || !heure) return setMsg("Choisissez la date et l'heure de votre rappel.");
     if (!consent) return setMsg("Cochez la case ci-dessus pour finaliser le sondage.");
     const r = await send(true, false);
     if (r) setDone(true);
@@ -139,7 +139,7 @@ export default function Funnel() {
     return (
       <div className="card" role="status">
         <h2>Sondage finalisé, merci {f.prenom} !</h2>
-        <p>Un conseiller vous rappelle au numéro indiqué ({lib(JOURS, jour).toLowerCase()}, {lib(CRENEAUX, creneau).toLowerCase()}).</p>
+        <p>Un conseiller vous rappelle au numéro indiqué le {dateLabel(date)} à {heureLabel(heure)}.</p>
         <p style={{ fontWeight: 600, marginBottom: 0 }}>✓ {GRATUIT}</p>
       </div>
     );
@@ -172,19 +172,17 @@ export default function Funnel() {
             </div>
           )}
         </div>
-        <h3 style={{ fontSize: 16, margin: "10px 0" }}>Quand êtes-vous disponible pour être rappelé(e) ? *</h3>
-            <div className="grid">
-              <label>Jour
-                <select value={jour} onChange={(e) => setJour(e.target.value)}>
-                  <option value="">Sélectionner…</option>{JOURS.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
-                </select>
-              </label>
-              <label>Créneau
-                <select value={creneau} onChange={(e) => setCreneau(e.target.value)}>
-                  <option value="">Sélectionner…</option>{CRENEAUX.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
-                </select>
-              </label>
-            </div>
+        <p style={{ fontWeight: 600, margin: "16px 0 10px" }}>Un conseiller prendra contact avec vous à l'heure de votre choix afin de discuter de la faisabilité de votre projet.</p>
+        <div className="grid">
+          <label>Date *
+            <input type="date" min={new Date().toISOString().slice(0, 10)} value={date} onChange={(e) => setDate(e.target.value)} />
+          </label>
+          <label>Heure *
+            <select value={heure} onChange={(e) => setHeure(e.target.value)}>
+              <option value="">Sélectionner…</option>{HEURES.map((h) => <option key={h} value={h}>{heureLabel(h)}</option>)}
+            </select>
+          </label>
+        </div>
         <label className="chk" style={{ marginTop: 16 }}><input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
           <span>{consentText(pac)}</span></label>
         {msg && <p className="err" role="alert">{msg}</p>}
