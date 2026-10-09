@@ -9,9 +9,13 @@ export const normalizePhone = (p: string) => {
   return "+33" + d.replace(/^0/, "");
 };
 
+export const INTERETS = ["pompe_a_chaleur", "solaire", "defiscalisation"] as const;
+
+// Étape 2 : coordonnées + consentement (création du lead).
 export const leadSchema = z
   .object({
     motif: z.enum(["defiscalisation", "energies"]),
+    interet: z.enum(INTERETS),
     prenom: z.string().trim().min(1).max(80),
     nom: z.string().trim().min(1).max(80),
     adresse: z.string().trim().min(3).max(200),
@@ -20,21 +24,33 @@ export const leadSchema = z
     email: z.string().trim().toLowerCase().max(200).optional().default(""),
     telephone: z.string().trim().regex(FR_PHONE),
     consent: z.literal(true),
-    simulation: z.record(z.string(), z.union([z.string(), z.number()])).optional(),
     website: z.string().optional(),
   })
   .superRefine((d, ctx) => {
-    const pac = d.simulation?.interet === "pompe_a_chaleur";
+    const pac = d.interet === "pompe_a_chaleur";
     // E-mail obligatoire sauf pour le questionnaire pompe à chaleur, où il est facultatif.
-    if ((!pac || d.email) && !EMAIL.test(d.email)) {
-      ctx.addIssue({ code: "custom", path: ["email"], message: "E-mail invalide" });
-    }
-    if (pac) {
-      const s = d.simulation ?? {};
-      if (s.proprietaire !== "oui" && s.proprietaire !== "non")
-        ctx.addIssue({ code: "custom", path: ["simulation"], message: "Propriétaire : réponse requise" });
-      const surface = Number(s.surface_habitable);
-      if (!Number.isFinite(surface) || surface < 9 || surface > 2000)
-        ctx.addIssue({ code: "custom", path: ["simulation"], message: "Surface habitable invalide" });
-    }
+    if ((!pac || d.email) && !EMAIL.test(d.email)) ctx.addIssue({ code: "custom", path: ["email"], message: "E-mail invalide" });
   });
+
+// Étape 3 : réponses au questionnaire (complète le lead).
+export const completeSchema = z.object({ id: z.string().uuid(), answers: z.record(z.string(), z.union([z.string(), z.number()])) });
+
+const yn = z.enum(["oui", "non"]);
+export const answersSchemas = {
+  pompe_a_chaleur: z.object({
+    proprietaire: yn,
+    surface_habitable: z.coerce.number().min(9).max(2000),
+    personnes_foyer_fiscal: z.coerce.number().int().min(1).max(20),
+    revenu_fiscal_reference: z.coerce.number().min(0).max(10_000_000),
+    maprimerenov_5_ans: yn.optional(),
+  }),
+  solaire: z.object({
+    logement: z.enum(["Maison", "Appartement"]),
+    statut: z.enum(["Propriétaire", "Locataire"]),
+    facture_annuelle: z.coerce.number().min(0).max(100000),
+  }),
+  defiscalisation: z.object({
+    foyer: z.enum(["Célibataire", "En couple"]),
+    revenu_imposable: z.coerce.number().min(0).max(10_000_000),
+  }),
+} as const;
