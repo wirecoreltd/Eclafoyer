@@ -47,8 +47,8 @@ export function evaluerPac(p: { rfr: number; personnes: number; codePostal: stri
         message: `Pompe à chaleur d'environ ${eur(PAC_COUT)} : reste à charge estimé de ${eur(PAC_RESTE_A_CHARGE_BLEU)}`,
         detail: "Estimation indicative, sous réserve d'éligibilité et de validation de votre dossier par un conseiller (logement, travaux, aides en vigueur)." }
     : { ...base, titre: "Merci, votre demande est enregistrée",
-        message: "L'offre à 1 € ne s'applique pas à votre situation",
-        detail: "Selon vos réponses, vous ne remplissez pas les conditions de cette offre. D'autres aides peuvent exister : un conseiller vous rappelle pour étudier votre cas." };
+        message: "Après analyse de votre dossier, un reste à charge est à prévoir",
+        detail: "Un conseiller vous rappelle pour en parler avec vous et étudier les aides qui s'appliquent à votre situation." };
   return { profil, zone, resultat };
 }
 
