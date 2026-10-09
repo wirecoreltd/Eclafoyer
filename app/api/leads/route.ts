@@ -11,7 +11,7 @@ export async function POST(req: Request) {
   if (!parsed.success) {
     return NextResponse.json({ error: "Certains champs sont invalides.", fields: parsed.error.flatten().fieldErrors }, { status: 422 });
   }
-  const { website, consent: _c, telephone, interet, answers, rappel_jour, rappel_creneau, ...d } = parsed.data;
+  const { website, consent: _c, preview, telephone, interet, answers, rappel_jour, rappel_creneau, ...d } = parsed.data;
   if (website) return NextResponse.json({ ok: true, resultat: RESULTAT_GENERIQUE }); // champ piège : on ignore les robots
 
   const a = answersSchemas[interet].safeParse(answers);
@@ -26,6 +26,9 @@ export async function POST(req: Request) {
     simulation = { ...simulation, zone: ev.zone, profil_maprimerenov: ev.profil, eligible_pac_1_euro: ev.resultat.eligible ? "oui" : "non" };
     resultat = ev.resultat;
   }
+
+  // Aperçu : on calcule le résultat mais on n'enregistre rien tant que la personne n'a pas donné son accord.
+  if (preview) return NextResponse.json({ ok: true, resultat });
 
   const { error } = await supabaseAdmin().from("leads").insert({
     ...d,
