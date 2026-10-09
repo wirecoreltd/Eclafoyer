@@ -19,6 +19,9 @@ const CHOICES: [string, Motif, string, string][] = [
   ["solaire", "energies", "solaire", "Panneaux solaires"],
   ["defisc", "defiscalisation", "defiscalisation", "Défiscalisation"],
 ];
+const JOURS: [string, string][] = [["semaine", "En semaine (lundi au vendredi)"], ["samedi", "Le samedi"], ["peu_importe", "Peu importe"]];
+const CRENEAUX: [string, string][] = [["matin", "Matin (9h–12h)"], ["midi", "Midi (12h–14h)"], ["apres_midi", "Après-midi (14h–18h)"], ["soir", "Soirée (18h–20h)"]];
+const lib = (list: [string, string][], v: string) => list.find(([k]) => k === v)?.[1] ?? "";
 const BADGE: Record<string, [string, string]> = { bleu: ["#1D4ED8", "#fff"], jaune: ["#FACC15", "#10282e"], violet: ["#7C3AED", "#fff"], rose: ["#DB2777", "#fff"] };
 
 function YesNoSelect({ label, value, onChange, required }: { label: string; value: YN; onChange: (v: YN) => void; required?: boolean }) {
@@ -38,6 +41,8 @@ export default function Funnel() {
   const [f, setF] = useState<Record<string, string>>({});
   const [consent, setConsent] = useState(false);
   const [hp, setHp] = useState("");
+  const [jour, setJour] = useState("");
+  const [creneau, setCreneau] = useState("");
   // Questionnaire pompe à chaleur
   const [proprio, setProprio] = useState<YN>("");
   const [surface, setSurface] = useState("");
@@ -92,12 +97,13 @@ export default function Funnel() {
     if (required.some((k) => !(f[k] ?? "").trim())) return setMsg("Merci de remplir tous les champs obligatoires.");
     const answers = buildAnswers();
     if (!answers) return;
+    if (!jour || !creneau) return setMsg("Indiquez quand vous souhaitez être rappelé(e).");
     if (!consent) return setMsg("Votre accord est nécessaire pour être rappelé.");
     setBusy(true);
     try {
       const r = await fetch("/api/leads", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...f, motif, interet, answers, consent: true, website: hp }),
+        body: JSON.stringify({ ...f, motif, interet, answers, rappel_jour: jour, rappel_creneau: creneau, consent: true, website: hp }),
       });
       const j = await r.json().catch(() => ({}));
       if (r.ok && j.resultat) { setRes(j.resultat); setStep(3); }
@@ -115,6 +121,7 @@ export default function Funnel() {
   if (step === 3 && res) {
     const rows: [string, string][] = [
       ["Nom", `${f.prenom ?? ""} ${f.nom ?? ""}`], ["Adresse", `${f.adresse ?? ""}, ${f.code_postal ?? ""} ${f.ville ?? ""}`], ["Téléphone", f.telephone ?? ""],
+      ["Rappel souhaité", `${lib(JOURS, jour)} · ${lib(CRENEAUX, creneau)}`],
       ...(f.email ? ([["E-mail", f.email]] as [string, string][]) : []),
       ...(pac
         ? ([["Propriétaire", proprio === "oui" ? "Oui" : "Non"], ["Surface habitable", `${surface} m²`], ["Personnes du foyer fiscal", nbPers], ["Revenu fiscal de référence", eur(Number(rfr))],
@@ -163,8 +170,8 @@ export default function Funnel() {
 
       {step === 2 && (
         <form onSubmit={submit} noValidate>
-          <h2>Votre demande de devis</h2>
-          <p className="mut">Remplissez ce formulaire : un conseiller vous rappelle ensuite.</p>
+          <h2>{pac ? "Vérifiez votre éligibilité" : "Votre étude gratuite"}</h2>
+          <p className="mut">{pac ? "Quelques questions pour savoir si vous pouvez bénéficier de l'offre pompe à chaleur. Un conseiller vous rappelle ensuite." : "Remplissez ce formulaire : un conseiller vous rappelle ensuite."}</p>
           <h3 style={{ fontSize: 16, margin: "6px 0 10px" }}>Vos coordonnées</h3>
           <div className="grid">
             {FIELDS.map(([k, label, ac, type]) => (
@@ -208,6 +215,20 @@ export default function Funnel() {
               <label>Revenu net imposable annuel : {eur(revenu)}<input type="range" min={20000} max={200000} step={5000} value={revenu} onChange={(e) => setRevenu(+e.target.value)} /></label>
             </>
           )}
+
+          <h3 style={{ fontSize: 16, margin: "10px 0" }}>Quand êtes-vous disponible pour être rappelé(e) ? *</h3>
+          <div className="grid">
+            <label>Jour
+              <select value={jour} onChange={(e) => setJour(e.target.value)}>
+                <option value="">Sélectionner…</option>{JOURS.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+              </select>
+            </label>
+            <label>Créneau
+              <select value={creneau} onChange={(e) => setCreneau(e.target.value)}>
+                <option value="">Sélectionner…</option>{CRENEAUX.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+              </select>
+            </label>
+          </div>
 
           <input className="hp" tabIndex={-1} autoComplete="off" aria-hidden value={hp} onChange={(e) => setHp(e.target.value)} name="website" />
           <label className="chk"><input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
