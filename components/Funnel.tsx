@@ -21,6 +21,9 @@ const CHOICES: [string, Motif, string, string][] = [
 ];
 const JOURS: [string, string][] = [["semaine", "En semaine (lundi au vendredi)"], ["samedi", "Le samedi"], ["peu_importe", "Peu importe"]];
 const CRENEAUX: [string, string][] = [["matin", "Matin (9h–12h)"], ["midi", "Midi (12h–14h)"], ["apres_midi", "Après-midi (14h–18h)"], ["soir", "Soirée (18h–20h)"]];
+const consentText = (pac: boolean) =>
+  `J'accepte d'être contacté(e) par téléphone${pac ? "" : " et par e-mail"} par [NOM DE VOTRE SOCIÉTÉ] au sujet de ma demande, et que les informations saisies (dont mes revenus) soient utilisées pour étudier mon éligibilité. Mes données sont conservées 3 ans maximum ; je peux exercer mes droits en écrivant à [E-MAIL DPO].`;
+const GRATUIT = "Ce sondage est totalement gratuit et ne vous engage à rien.";
 const lib = (list: [string, string][], v: string) => list.find(([k]) => k === v)?.[1] ?? "";
 const BADGE: Record<string, [string, string]> = { bleu: ["#1D4ED8", "#fff"], jaune: ["#FACC15", "#10282e"], violet: ["#7C3AED", "#fff"], rose: ["#DB2777", "#fff"] };
 
@@ -146,6 +149,8 @@ export default function Funnel() {
             </div>
           )}
         </div>
+        <p style={{ fontSize: 12, color: "var(--mut)", lineHeight: 1.5, margin: "12px 0 0" }}>{consentText(pac)}</p>
+        <p style={{ fontWeight: 600, margin: "12px 0 0" }}>✓ {GRATUIT}</p>
         <p style={{ marginBottom: 0 }}>Merci {f.prenom}. Un conseiller vous rappelle très vite au numéro indiqué.</p>
       </div>
     );
@@ -172,6 +177,7 @@ export default function Funnel() {
         <form onSubmit={submit} noValidate>
           <h2>{pac ? "Vérifiez votre éligibilité" : "Votre étude gratuite"}</h2>
           <p className="mut">{pac ? "Quelques questions pour savoir si vous pouvez bénéficier de l'offre pompe à chaleur. Un conseiller vous rappelle ensuite." : "Remplissez ce formulaire : un conseiller vous rappelle ensuite."}</p>
+          <p className="mut" style={{ fontWeight: 600 }}>✓ {GRATUIT}</p>
           <h3 style={{ fontSize: 16, margin: "6px 0 10px" }}>Vos coordonnées</h3>
           <div className="grid">
             {FIELDS.map(([k, label, ac, type]) => (
@@ -232,7 +238,7 @@ export default function Funnel() {
 
           <input className="hp" tabIndex={-1} autoComplete="off" aria-hidden value={hp} onChange={(e) => setHp(e.target.value)} name="website" />
           <label className="chk"><input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
-            <span>J'accepte d'être contacté(e) par téléphone{pac ? "" : " et par e-mail"} par [NOM DE VOTRE SOCIÉTÉ] au sujet de ma demande, et que les informations saisies (dont mes revenus) soient utilisées pour étudier mon éligibilité. Mes données sont conservées 3 ans maximum ; je peux exercer mes droits en écrivant à [E-MAIL DPO].</span></label>
+            <span>{consentText(pac)}</span></label>
           {msg && <p className="err" role="alert">{msg}</p>}
           <button className="btn" disabled={busy}>{busy ? "Envoi…" : "Être rappelé"}</button>
         </form>
