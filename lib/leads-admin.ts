@@ -10,6 +10,9 @@ export const STATUT_LABELS: Record<Statut, string> = {
   perdu: "Perdu",
 };
 
+// Pour l'instant tous les leads sont des pompes à chaleur.
+export const MOTIF_LABEL = "PAC";
+
 export type Filters = { q?: string; statut?: string; motif?: string; du?: string; au?: string };
 
 // Lecture des filtres depuis l'URL (page admin et export utilisent exactement la même logique).
@@ -53,14 +56,15 @@ export const phoneNational = (p?: string | null) => (p ? p.replace(/^\+33/, "0")
 
 type Lead = Record<string, any>;
 export function leadsToCsv(leads: Lead[]): string {
-  const head = ["Date", "Prénom", "Nom", "Téléphone", "E-mail", "Adresse", "Code postal", "Ville", "Motif", "Statut", "Rappel (date)", "Rappel (heure)", "Éligible PAC 1 €", "Profil MaPrimeRénov'", "Propriétaire", "Surface (m²)", "Personnes foyer", "Revenu fiscal réf."];
+  const head = ["Date", "Prénom", "Nom", "Téléphone", "E-mail", "Adresse", "Code postal", "Ville", "Motif", "Statut", "Rappel (date)", "Rappel (heure)", "Propriétaire", "Surface (m²)", "Personnes foyer", "Revenu fiscal réf.", "MaPrimeRénov' 5 ans", "Zone", "Profil MaPrimeRénov'", "Éligible PAC 1 €"];
   const rows = leads.map((l) => {
     const s = (l.simulation ?? {}) as Record<string, unknown>;
     return [
       new Date(l.created_at).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" }),
       l.prenom, l.nom, phoneNational(l.telephone), l.email, l.adresse, l.code_postal, l.ville,
-      l.motif, l.statut, s.rappel_date, s.rappel_heure, s.eligible_pac_1_euro, s.profil_maprimerenov,
+      MOTIF_LABEL, l.statut, s.rappel_date, s.rappel_heure,
       s.proprietaire, s.surface_habitable, s.personnes_foyer_fiscal, s.revenu_fiscal_reference,
+      s.maprimerenov_5_ans, s.zone, s.profil_maprimerenov, s.eligible_pac_1_euro,
     ].map(csvCell).join(";");
   });
   return "\uFEFF" + [head.join(";"), ...rows].join("\r\n");
