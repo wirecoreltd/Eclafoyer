@@ -33,15 +33,13 @@ export function getProfil(rfr: number, personnes: number, zone: Zone): Profil {
   return "rose";
 }
 
-const LIBELLES: Record<Profil, string> = { bleu: "très modeste", jaune: "modeste", violet: "intermédiaire", rose: "aisé" };
-
-export type Resultat = { eligible: boolean; titre: string; message: string; detail: string; profil?: Profil; profilLibelle?: string };
+export type Resultat = { eligible: boolean; titre: string; message: string; detail: string; profil?: Profil };
 
 export function evaluerPac(p: { rfr: number; personnes: number; codePostal: string; proprietaire: "oui" | "non" }): { profil: Profil; zone: Zone; resultat: Resultat } {
   const zone = zoneFromCodePostal(p.codePostal);
   const profil = getProfil(p.rfr, p.personnes, zone);
   const eligible = profil === "bleu" && p.proprietaire === "oui";
-  const base = { eligible, profil, profilLibelle: LIBELLES[profil] };
+  const base = { eligible, profil };
   const resultat: Resultat = eligible
     ? { ...base, titre: "Bonne nouvelle, vous êtes éligible à la pompe à chaleur à 1 € symbolique",
         message: "Profil bleu : votre pompe à chaleur ne vous coûte que 1 €",
