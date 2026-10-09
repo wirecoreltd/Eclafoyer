@@ -11,7 +11,7 @@ export const normalizePhone = (p: string) => {
 
 export const INTERETS = ["pompe_a_chaleur", "solaire", "defiscalisation"] as const;
 
-// Étape 2 : coordonnées + consentement (création du lead).
+// Formulaire unique : coordonnées + réponses + consentement.
 export const leadSchema = z
   .object({
     motif: z.enum(["defiscalisation", "energies"]),
@@ -24,6 +24,7 @@ export const leadSchema = z
     email: z.string().trim().toLowerCase().max(200).optional().default(""),
     telephone: z.string().trim().regex(FR_PHONE),
     consent: z.literal(true),
+    answers: z.record(z.string(), z.union([z.string(), z.number()])),
     website: z.string().optional(),
   })
   .superRefine((d, ctx) => {
@@ -31,9 +32,6 @@ export const leadSchema = z
     // E-mail obligatoire sauf pour le questionnaire pompe à chaleur, où il est facultatif.
     if ((!pac || d.email) && !EMAIL.test(d.email)) ctx.addIssue({ code: "custom", path: ["email"], message: "E-mail invalide" });
   });
-
-// Étape 3 : réponses au questionnaire (complète le lead).
-export const completeSchema = z.object({ id: z.string().uuid(), answers: z.record(z.string(), z.union([z.string(), z.number()])) });
 
 const yn = z.enum(["oui", "non"]);
 export const answersSchemas = {
