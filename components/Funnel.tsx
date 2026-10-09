@@ -38,7 +38,7 @@ function YesNoSelect({ label, value, onChange, required }: { label: string; valu
 }
 
 export default function Funnel() {
-  const [step, setStep] = useState(1); // 1 choix · 2 formulaire unique · 3 résultat
+  const [step, setStep] = useState(1); // 1 choix · 2 formulaire · 3 résultat + récapitulatif + consentement
   const [interet, setInteret] = useState("");
   const [motif, setMotif] = useState<Motif | null>(null);
   const [f, setF] = useState<Record<string, string>>({});
@@ -62,6 +62,7 @@ export default function Funnel() {
   const [errs, setErrs] = useState<Record<string, string[]>>({});
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(false);
   const [res, setRes] = useState<Resultat | null>(null);
   const pac = interet === "pompe_a_chaleur";
 
@@ -69,7 +70,7 @@ export default function Funnel() {
   useEffect(() => {
     const h = (e: Event) => {
       const d = (e as CustomEvent).detail as { motif: Motif; interet: string };
-      setMotif(d.motif); setInteret(d.interet); setRes(null); setMsg(""); setStep(2);
+      setMotif(d.motif); setInteret(d.interet); setRes(null); setDone(false); setMsg(""); setStep(2);
     };
     window.addEventListener("choose-motif", h);
     return () => window.removeEventListener("choose-motif", h);
@@ -92,27 +93,40 @@ export default function Funnel() {
     return motif === "energies" ? { logement, statut, facture_annuelle: facture } : { foyer, revenu_imposable: revenu };
   }
 
-  // Formulaire unique : le serveur enregistre le lead, calcule le profil et renvoie le message à afficher.
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    setMsg(""); setErrs({});
-    const required = ["prenom", "nom", "adresse", "code_postal", "ville", "telephone", ...(pac ? [] : ["email"])];
-    if (required.some((k) => !(f[k] ?? "").trim())) return setMsg("Merci de remplir tous les champs obligatoires.");
+  async function send(consentOk: boolean, preview: boolean) {
     const answers = buildAnswers();
-    if (!answers) return;
-    if (!jour || !creneau) return setMsg("Indiquez quand vous souhaitez être rappelé(e).");
-    if (!consent) return setMsg("Votre accord est nécessaire pour être rappelé.");
+    if (!answers) return null;
     setBusy(true);
     try {
       const r = await fetch("/api/leads", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...f, motif, interet, answers, rappel_jour: jour, rappel_creneau: creneau, consent: true, website: hp }),
+        body: JSON.stringify({ ...f, motif, interet, answers, rappel_jour: jour, rappel_creneau: creneau, consent: consentOk, preview, website: hp }),
       });
       const j = await r.json().catch(() => ({}));
-      if (r.ok && j.resultat) { setRes(j.resultat); setStep(3); }
-      else { setErrs(j.fields ?? {}); setMsg(j.error ?? "Une erreur est survenue. Réessayez."); }
+      if (r.ok && j.resultat) { setBusy(false); return j.resultat as Resultat; }
+      setErrs(j.fields ?? {}); setMsg(j.error ?? "Une erreur est survenue. Réessayez.");
     } catch { setMsg("Connexion impossible. Réessayez."); }
     setBusy(false);
+    return null;
+  }
+
+  // Étape 2 → calcule le résultat côté serveur (rien n'est enregistré à ce stade).
+  async function showRecap(e: React.FormEvent) {
+    e.preventDefault();
+    setMsg(""); setErrs({});
+    const required = ["prenom", "nom", "adresse", "code_postal", "ville", "telephone", ...(pac ? [] : ["email"])];
+    if (required.some((k) => !(f[k] ?? "").trim())) return setMsg("Merci de remplir tous les champs obligatoires.");
+    if (!jour || !creneau) return setMsg("Indiquez quand vous souhaitez être rappelé(e).");
+    const r = await send(false, true);
+    if (r) { setRes(r); setConsent(false); setStep(3); }
+  }
+
+  // Étape 3 → le consentement donné en fin de récapitulatif finalise le sondage et enregistre la demande.
+  async function finalize() {
+    setMsg("");
+    if (!consent) return setMsg("Cochez la case ci-dessus pour finaliser le sondage.");
+    const r = await send(true, false);
+    if (r) setDone(true);
   }
 
   const row = (k: string, v: string) => (
@@ -120,6 +134,16 @@ export default function Funnel() {
       <span style={{ color: "var(--mut)" }}>{k}</span><span style={{ fontWeight: 600, textAlign: "right" }}>{v}</span>
     </div>
   );
+
+  if (step === 3 && res && done) {
+    return (
+      <div className="card" role="status">
+        <h2>Sondage finalisé, merci {f.prenom} !</h2>
+        <p>Un conseiller vous rappelle au numéro indiqué ({lib(JOURS, jour).toLowerCase()}, {lib(CRENEAUX, creneau).toLowerCase()}).</p>
+        <p style={{ fontWeight: 600, marginBottom: 0 }}>✓ {GRATUIT}</p>
+      </div>
+    );
+  }
 
   if (step === 3 && res) {
     const rows: [string, string][] = [
@@ -136,7 +160,7 @@ export default function Funnel() {
     const [bg, fg] = BADGE[res.profil ?? ""] ?? ["", ""];
     return (
       <div className="card" role="status">
-        <small className="mut" style={{ textTransform: "uppercase", letterSpacing: ".04em", fontWeight: 700 }}>Demande envoyée</small>
+        <small className="mut" style={{ textTransform: "uppercase", letterSpacing: ".04em", fontWeight: 700 }}>Votre résultat</small>
         <h2>{res.titre}</h2>
         <div className="res"><strong>{res.message}</strong><small>{res.detail}</small></div>
         <div style={{ border: "1px solid var(--line)", borderRadius: 12, padding: "6px 16px 14px", marginTop: 16 }}>
@@ -150,14 +174,18 @@ export default function Funnel() {
           )}
         </div>
         <p style={{ fontWeight: 600, margin: "12px 0 0" }}>✓ {GRATUIT}</p>
-        <p style={{ marginBottom: 0 }}>Merci {f.prenom}. Un conseiller vous rappelle très vite au numéro indiqué.</p>
+        <label className="chk" style={{ marginTop: 16 }}><input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
+          <span>{consentText(pac)}</span></label>
+        {msg && <p className="err" role="alert">{msg}</p>}
+        <button className="btn" disabled={busy} onClick={finalize}>{busy ? "Envoi…" : "Envoyer"}</button>
+        <button type="button" onClick={() => { setMsg(""); setStep(2); }} style={{ display: "block", margin: "12px auto 0", background: "none", border: 0, color: "var(--mut)", textDecoration: "underline", cursor: "pointer", font: "inherit", fontSize: 14 }}>Modifier mes réponses</button>
       </div>
     );
   }
 
   return (
     <div className="card">
-      <div className="prog"><i style={{ width: `${step * 50}%` }} /></div>
+      <div className="prog"><i style={{ width: `${step * 33.3}%` }} /></div>
 
       {step === 1 && (
         <>
@@ -173,7 +201,7 @@ export default function Funnel() {
       )}
 
       {step === 2 && (
-        <form onSubmit={submit} noValidate>
+        <form onSubmit={showRecap} noValidate>
           <h2>{pac ? "Vérifiez votre éligibilité" : "Votre étude gratuite"}</h2>
           <p className="mut">{pac ? "Quelques questions pour savoir si vous pouvez bénéficier de l'offre pompe à chaleur. Un conseiller vous rappelle ensuite." : "Remplissez ce formulaire : un conseiller vous rappelle ensuite."}</p>
           <p className="mut" style={{ fontWeight: 600 }}>✓ {GRATUIT}</p>
@@ -236,10 +264,8 @@ export default function Funnel() {
           </div>
 
           <input className="hp" tabIndex={-1} autoComplete="off" aria-hidden value={hp} onChange={(e) => setHp(e.target.value)} name="website" />
-          <label className="chk"><input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
-            <span>{consentText(pac)}</span></label>
           {msg && <p className="err" role="alert">{msg}</p>}
-          <button className="btn" disabled={busy}>{busy ? "Envoi…" : "Envoyer"}</button>
+          <button className="btn" disabled={busy}>{busy ? "Calcul…" : "Voir mon résultat"}</button>
         </form>
       )}
     </div>
