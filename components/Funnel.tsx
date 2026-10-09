@@ -32,13 +32,12 @@ function YesNoSelect({ label, value, onChange, required }: { label: string; valu
 }
 
 export default function Funnel() {
-  const [step, setStep] = useState(1); // 1 choix · 2 coordonnées · 3 questionnaire · 4 résultat
+  const [step, setStep] = useState(1); // 1 choix · 2 formulaire unique · 3 résultat
   const [interet, setInteret] = useState("");
   const [motif, setMotif] = useState<Motif | null>(null);
   const [f, setF] = useState<Record<string, string>>({});
   const [consent, setConsent] = useState(false);
   const [hp, setHp] = useState("");
-  const [leadId, setLeadId] = useState("");
   // Questionnaire pompe à chaleur
   const [proprio, setProprio] = useState<YN>("");
   const [surface, setSurface] = useState("");
@@ -58,11 +57,11 @@ export default function Funnel() {
   const [res, setRes] = useState<Resultat | null>(null);
   const pac = interet === "pompe_a_chaleur";
 
-  // Les boutons « Vérifier / Être rappelé pour… » de la page présélectionnent le motif et passent aux coordonnées.
+  // Les boutons « Vérifier / Être rappelé pour… » de la page présélectionnent le motif et passent au formulaire.
   useEffect(() => {
     const h = (e: Event) => {
       const d = (e as CustomEvent).detail as { motif: Motif; interet: string };
-      setMotif(d.motif); setInteret(d.interet); setLeadId(""); setRes(null); setMsg(""); setStep(2);
+      setMotif(d.motif); setInteret(d.interet); setRes(null); setMsg(""); setStep(2);
     };
     window.addEventListener("choose-motif", h);
     return () => window.removeEventListener("choose-motif", h);
@@ -70,26 +69,7 @@ export default function Funnel() {
 
   function pickChoice(m: Motif, i: string) { setMotif(m); setInteret(i); }
 
-  // Étape 2 → crée le lead (conservé même si le visiteur abandonne ensuite).
-  async function submitCoords(e: React.FormEvent) {
-    e.preventDefault();
-    setMsg(""); setErrs({});
-    const required = ["prenom", "nom", "adresse", "code_postal", "ville", "telephone", ...(pac ? [] : ["email"])];
-    if (required.some((k) => !(f[k] ?? "").trim())) return setMsg("Merci de remplir tous les champs obligatoires.");
-    if (!consent) return setMsg("Votre accord est nécessaire pour être rappelé.");
-    setBusy(true);
-    try {
-      const r = await fetch("/api/leads", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...f, motif, interet, consent: true, website: hp }),
-      });
-      const j = await r.json().catch(() => ({}));
-      if (r.ok && j.id) { setLeadId(j.id); setStep(3); }
-      else { setErrs(j.fields ?? {}); setMsg(j.error ?? "Une erreur est survenue. Réessayez."); }
-    } catch { setMsg("Connexion impossible. Réessayez."); }
-    setBusy(false);
-  }
-
+  function fail(m: string) { setMsg(m); return null; }
   function buildAnswers(): Record<string, string | number> | null {
     if (pac) {
       const s = Number(surface), n = Number(nbPers), r = Number(rfr);
@@ -103,22 +83,25 @@ export default function Funnel() {
     }
     return motif === "energies" ? { logement, statut, facture_annuelle: facture } : { foyer, revenu_imposable: revenu };
   }
-  function fail(m: string) { setMsg(m); return null; }
 
-  // Étape 3 → enregistre les réponses ; le serveur calcule le profil et renvoie le message.
-  async function submitAnswers() {
-    setMsg("");
+  // Formulaire unique : le serveur enregistre le lead, calcule le profil et renvoie le message à afficher.
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setMsg(""); setErrs({});
+    const required = ["prenom", "nom", "adresse", "code_postal", "ville", "telephone", ...(pac ? [] : ["email"])];
+    if (required.some((k) => !(f[k] ?? "").trim())) return setMsg("Merci de remplir tous les champs obligatoires.");
     const answers = buildAnswers();
     if (!answers) return;
+    if (!consent) return setMsg("Votre accord est nécessaire pour être rappelé.");
     setBusy(true);
     try {
       const r = await fetch("/api/leads", {
-        method: "PATCH", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: leadId, answers }),
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...f, motif, interet, answers, consent: true, website: hp }),
       });
       const j = await r.json().catch(() => ({}));
-      if (r.ok && j.resultat) { setRes(j.resultat); setStep(4); }
-      else setMsg(j.error ?? "Une erreur est survenue. Réessayez.");
+      if (r.ok && j.resultat) { setRes(j.resultat); setStep(3); }
+      else { setErrs(j.fields ?? {}); setMsg(j.error ?? "Une erreur est survenue. Réessayez."); }
     } catch { setMsg("Connexion impossible. Réessayez."); }
     setBusy(false);
   }
@@ -129,7 +112,7 @@ export default function Funnel() {
     </div>
   );
 
-  if (step === 4 && res) {
+  if (step === 3 && res) {
     const rows: [string, string][] = [
       ["Nom", `${f.prenom ?? ""} ${f.nom ?? ""}`], ["Adresse", `${f.adresse ?? ""}, ${f.code_postal ?? ""} ${f.ville ?? ""}`], ["Téléphone", f.telephone ?? ""],
       ...(f.email ? ([["E-mail", f.email]] as [string, string][]) : []),
@@ -163,7 +146,7 @@ export default function Funnel() {
 
   return (
     <div className="card">
-      <div className="prog"><i style={{ width: `${step * 33.3}%` }} /></div>
+      <div className="prog"><i style={{ width: `${step * 50}%` }} /></div>
 
       {step === 1 && (
         <>
@@ -179,9 +162,10 @@ export default function Funnel() {
       )}
 
       {step === 2 && (
-        <form onSubmit={submitCoords} noValidate>
-          <h2>Vos coordonnées</h2>
-          <p className="mut">Pour que votre conseiller puisse vous rappeler.</p>
+        <form onSubmit={submit} noValidate>
+          <h2>Votre demande de devis</h2>
+          <p className="mut">Remplissez ce formulaire : un conseiller vous rappelle ensuite.</p>
+          <h3 style={{ fontSize: 16, margin: "6px 0 10px" }}>Vos coordonnées</h3>
           <div className="grid">
             {FIELDS.map(([k, label, ac, type]) => (
               <label key={k} className={k === "adresse" ? "full" : ""}>{label}{k === "email" && pac ? " (facultatif)" : " *"}
@@ -190,55 +174,47 @@ export default function Funnel() {
               </label>
             ))}
           </div>
+
+          {pac && (
+            <>
+              <h3 style={{ fontSize: 16, margin: "10px 0" }}>Votre logement et votre foyer</h3>
+              <YesNoSelect label="Êtes-vous propriétaire de votre logement ?" required value={proprio} onChange={setProprio} />
+              {proprio === "non" && <p className="warn">Les aides à la rénovation concernent en général les propriétaires. Un conseiller pourra vous indiquer ce qui s'applique à votre cas.</p>}
+              <label>Surface habitable (m²) *
+                <input type="number" inputMode="numeric" min={9} max={2000} value={surface} onChange={(e) => setSurface(e.target.value)} />
+              </label>
+              <label>Nombre de personnes dans le foyer fiscal *
+                <input type="number" inputMode="numeric" min={1} max={20} value={nbPers} onChange={(e) => setNbPers(e.target.value)} />
+              </label>
+              <label>Revenu fiscal de référence (€) *
+                <input type="number" inputMode="numeric" min={0} value={rfr} onChange={(e) => setRfr(e.target.value)} />
+                <small className="help">Indiqué sur votre dernier avis d'imposition.</small>
+              </label>
+              <YesNoSelect label="Avez-vous déjà bénéficié de MaPrimeRénov' ces 5 dernières années ?" value={mpr} onChange={setMpr} />
+            </>
+          )}
+          {!pac && motif === "energies" && (
+            <>
+              <h3 style={{ fontSize: 16, margin: "10px 0" }}>Votre logement</h3>
+              <label>Type<select value={logement} onChange={(e) => setLogement(e.target.value)}><option>Maison</option><option>Appartement</option></select></label>
+              <label>Vous êtes<select value={statut} onChange={(e) => setStatut(e.target.value)}><option>Propriétaire</option><option>Locataire</option></select></label>
+              <label>Facture d'énergie annuelle : {eur(facture)}<input type="range" min={500} max={5000} step={100} value={facture} onChange={(e) => setFacture(+e.target.value)} /></label>
+            </>
+          )}
+          {!pac && motif === "defiscalisation" && (
+            <>
+              <h3 style={{ fontSize: 16, margin: "10px 0" }}>Votre situation</h3>
+              <label>Foyer<select value={foyer} onChange={(e) => setFoyer(e.target.value)}><option>Célibataire</option><option>En couple</option></select></label>
+              <label>Revenu net imposable annuel : {eur(revenu)}<input type="range" min={20000} max={200000} step={5000} value={revenu} onChange={(e) => setRevenu(+e.target.value)} /></label>
+            </>
+          )}
+
           <input className="hp" tabIndex={-1} autoComplete="off" aria-hidden value={hp} onChange={(e) => setHp(e.target.value)} name="website" />
           <label className="chk"><input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
             <span>J'accepte d'être contacté(e) par téléphone{pac ? "" : " et par e-mail"} par [NOM DE VOTRE SOCIÉTÉ] au sujet de ma demande, et que les informations saisies (dont mes revenus) soient utilisées pour étudier mon éligibilité. Mes données sont conservées 3 ans maximum ; je peux exercer mes droits en écrivant à [E-MAIL DPO].</span></label>
           {msg && <p className="err" role="alert">{msg}</p>}
-          <button className="btn" disabled={busy}>{busy ? "Envoi…" : "Continuer"}</button>
+          <button className="btn" disabled={busy}>{busy ? "Envoi…" : "Être rappelé"}</button>
         </form>
-      )}
-
-      {step === 3 && pac && (
-        <>
-          <h2>Votre logement et votre foyer</h2>
-          <p className="mut">Ces réponses permettent de vérifier à quelles aides vous pouvez prétendre.</p>
-          <YesNoSelect label="Êtes-vous propriétaire de votre logement ?" required value={proprio} onChange={setProprio} />
-          {proprio === "non" && <p className="warn">Les aides à la rénovation concernent en général les propriétaires. Un conseiller pourra vous indiquer ce qui s'applique à votre cas.</p>}
-          <label>Surface habitable (m²) *
-            <input type="number" inputMode="numeric" min={9} max={2000} value={surface} onChange={(e) => setSurface(e.target.value)} />
-          </label>
-          <label>Nombre de personnes dans le foyer fiscal *
-            <input type="number" inputMode="numeric" min={1} max={20} value={nbPers} onChange={(e) => setNbPers(e.target.value)} />
-          </label>
-          <label>Revenu fiscal de référence (€) *
-            <input type="number" inputMode="numeric" min={0} value={rfr} onChange={(e) => setRfr(e.target.value)} />
-            <small className="help">Indiqué sur votre dernier avis d'imposition.</small>
-          </label>
-          <YesNoSelect label="Avez-vous déjà bénéficié de MaPrimeRénov' ces 5 dernières années ?" value={mpr} onChange={setMpr} />
-          {msg && <p className="err" role="alert">{msg}</p>}
-          <button className="btn" disabled={busy} onClick={submitAnswers}>{busy ? "Envoi…" : "Être rappelé"}</button>
-        </>
-      )}
-
-      {step === 3 && !pac && motif === "energies" && (
-        <>
-          <h2>Votre logement</h2>
-          <label>Type<select value={logement} onChange={(e) => setLogement(e.target.value)}><option>Maison</option><option>Appartement</option></select></label>
-          <label>Vous êtes<select value={statut} onChange={(e) => setStatut(e.target.value)}><option>Propriétaire</option><option>Locataire</option></select></label>
-          <label>Facture d'énergie annuelle : {eur(facture)}<input type="range" min={500} max={5000} step={100} value={facture} onChange={(e) => setFacture(+e.target.value)} /></label>
-          {msg && <p className="err" role="alert">{msg}</p>}
-          <button className="btn" disabled={busy} onClick={submitAnswers}>{busy ? "Envoi…" : "Être rappelé"}</button>
-        </>
-      )}
-
-      {step === 3 && !pac && motif === "defiscalisation" && (
-        <>
-          <h2>Votre situation</h2>
-          <label>Foyer<select value={foyer} onChange={(e) => setFoyer(e.target.value)}><option>Célibataire</option><option>En couple</option></select></label>
-          <label>Revenu net imposable annuel : {eur(revenu)}<input type="range" min={20000} max={200000} step={5000} value={revenu} onChange={(e) => setRevenu(+e.target.value)} /></label>
-          {msg && <p className="err" role="alert">{msg}</p>}
-          <button className="btn" disabled={busy} onClick={submitAnswers}>{busy ? "Envoi…" : "Être rappelé"}</button>
-        </>
       )}
     </div>
   );
