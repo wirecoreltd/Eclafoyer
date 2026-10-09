@@ -55,11 +55,6 @@ export async function fetchLeadsByIds(ids: string[]) {
   return { data: all, error: null };
 }
 
-// Leads précis (export de la sélection cochée dans le tableau)
-export async function fetchLeadsByIds(ids: string[]) {
-  return supabaseAdmin().from("leads").select("*").in("id", ids).order("created_at", { ascending: false }).limit(10000);
-}
-
 // ---- CSV (séparateur ";" + BOM : s'ouvre directement dans Excel FR) ----
 const FORMULA_START = /^[=+\-@\t\r]/;
 export function csvCell(v: unknown): string {
