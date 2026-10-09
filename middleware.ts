@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
-export const config = { matcher: ["/admin/:path*"] };
+// Protège la page admin ET les routes API admin (export CSV, changement de statut).
+export const config = { matcher: ["/admin/:path*", "/api/admin/:path*"] };
 
 export function middleware(req: NextRequest) {
   const u = process.env.ADMIN_USER, p = process.env.ADMIN_PASSWORD;
