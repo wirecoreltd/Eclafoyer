@@ -100,7 +100,7 @@ export default function Funnel() {
     try {
       const r = await fetch("/api/leads", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...f, motif, interet, answers, rappel_jour: jour, rappel_creneau: creneau, consent: consentOk, preview, website: hp }),
+        body: JSON.stringify({ ...f, motif, interet, answers, rappel_jour: jour || undefined, rappel_creneau: creneau || undefined, consent: consentOk, preview, website: hp }),
       });
       const j = await r.json().catch(() => ({}));
       if (r.ok && j.resultat) { setBusy(false); return j.resultat as Resultat; }
@@ -116,7 +116,6 @@ export default function Funnel() {
     setMsg(""); setErrs({});
     const required = ["prenom", "nom", "adresse", "code_postal", "ville", "telephone", ...(pac ? [] : ["email"])];
     if (required.some((k) => !(f[k] ?? "").trim())) return setMsg("Merci de remplir tous les champs obligatoires.");
-    if (!jour || !creneau) return setMsg("Indiquez quand vous souhaitez être rappelé(e).");
     const r = await send(false, true);
     if (r) { setRes(r); setConsent(false); setStep(3); }
   }
@@ -124,6 +123,7 @@ export default function Funnel() {
   // Étape 3 → le consentement donné en fin de récapitulatif finalise le sondage et enregistre la demande.
   async function finalize() {
     setMsg("");
+    if (!jour || !creneau) return setMsg("Indiquez quand vous souhaitez être rappelé(e).");
     if (!consent) return setMsg("Cochez la case ci-dessus pour finaliser le sondage.");
     const r = await send(true, false);
     if (r) setDone(true);
@@ -148,7 +148,6 @@ export default function Funnel() {
   if (step === 3 && res) {
     const rows: [string, string][] = [
       ["Nom", `${f.prenom ?? ""} ${f.nom ?? ""}`], ["Adresse", `${f.adresse ?? ""}, ${f.code_postal ?? ""} ${f.ville ?? ""}`], ["Téléphone", f.telephone ?? ""],
-      ["Rappel souhaité", `${lib(JOURS, jour)} · ${lib(CRENEAUX, creneau)}`],
       ...(f.email ? ([["E-mail", f.email]] as [string, string][]) : []),
       ...(pac
         ? ([["Propriétaire", proprio === "oui" ? "Oui" : "Non"], ["Surface habitable", `${surface} m²`], ["Personnes du foyer fiscal", nbPers], ["Revenu fiscal de référence", eur(Number(rfr))],
@@ -169,11 +168,24 @@ export default function Funnel() {
           {res.profil && (
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 12 }}>
               <span style={{ color: "var(--mut)", fontSize: 14 }}>Votre profil</span>
-              <span style={{ background: bg, color: fg, fontWeight: 700, fontSize: 14, padding: "4px 12px", borderRadius: 999 }}>Profil {res.profil} · {res.profilLibelle}</span>
+              <span style={{ background: bg, color: fg, fontWeight: 700, fontSize: 14, padding: "4px 12px", borderRadius: 999 }}>Profil {res.profil}</span>
             </div>
           )}
         </div>
         <p style={{ fontWeight: 600, margin: "12px 0 0" }}>✓ {GRATUIT}</p>
+        <h3 style={{ fontSize: 16, margin: "10px 0" }}>Quand êtes-vous disponible pour être rappelé(e) ? *</h3>
+            <div className="grid">
+              <label>Jour
+                <select value={jour} onChange={(e) => setJour(e.target.value)}>
+                  <option value="">Sélectionner…</option>{JOURS.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+                </select>
+              </label>
+              <label>Créneau
+                <select value={creneau} onChange={(e) => setCreneau(e.target.value)}>
+                  <option value="">Sélectionner…</option>{CRENEAUX.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+                </select>
+              </label>
+            </div>
         <label className="chk" style={{ marginTop: 16 }}><input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
           <span>{consentText(pac)}</span></label>
         {msg && <p className="err" role="alert">{msg}</p>}
@@ -248,20 +260,6 @@ export default function Funnel() {
               <label>Revenu net imposable annuel : {eur(revenu)}<input type="range" min={20000} max={200000} step={5000} value={revenu} onChange={(e) => setRevenu(+e.target.value)} /></label>
             </>
           )}
-
-          <h3 style={{ fontSize: 16, margin: "10px 0" }}>Quand êtes-vous disponible pour être rappelé(e) ? *</h3>
-          <div className="grid">
-            <label>Jour
-              <select value={jour} onChange={(e) => setJour(e.target.value)}>
-                <option value="">Sélectionner…</option>{JOURS.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
-              </select>
-            </label>
-            <label>Créneau
-              <select value={creneau} onChange={(e) => setCreneau(e.target.value)}>
-                <option value="">Sélectionner…</option>{CRENEAUX.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
-              </select>
-            </label>
-          </div>
 
           <input className="hp" tabIndex={-1} autoComplete="off" aria-hidden value={hp} onChange={(e) => setHp(e.target.value)} name="website" />
           {msg && <p className="err" role="alert">{msg}</p>}
