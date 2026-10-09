@@ -31,8 +31,7 @@ const CONDITIONS = [
 const FAQ = [
   ["Est-ce vraiment gratuit ?", "Oui. Le sondage est totalement gratuit et ne vous engage à rien. Vous décidez ensuite."],
   ["Qui va m'appeler ?", "Un conseiller de [NOM DE VOTRE SOCIÉTÉ], uniquement au sujet de votre demande, à la date et à l'heure que vous avez choisies."],
-  ["Pourquoi demander mes revenus ?", "Les aides dépendent de votre revenu fiscal de référence et de la taille de votre foyer."],
-  ["Que deviennent mes données ?", "Elles servent à traiter votre demande, sont conservées 3 ans maximum, et vous pouvez les faire supprimer à tout moment."],
+  ["Pourquoi demander mes revenus ?", "Les aides dépendent de votre revenu fiscal de référence et de la taille de votre foyer."],  
 ];
 
 export default function Home() {
