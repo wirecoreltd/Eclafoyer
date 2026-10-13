@@ -6,7 +6,7 @@ const CFG = {
   email: "",                            // ex. "contact@eclafoyer.fr"
   siret: "",                            // ex. "123 456 789 00012"
   adresse: "",                          // ex. "12 rue X, 75000 Paris"
-  horaires: "Du lundi au vendredi, 9h–19h",
+  horaires: "",
   dpo: "",                              // e-mail pour exercer ses droits RGPD (vide = e-mail de contact)
   installateurs: "100+",                // à ne garder que si c'est exact et prouvable ; vide = non affiché
 };
