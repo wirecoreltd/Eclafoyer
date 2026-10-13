@@ -218,7 +218,7 @@ export default function Home() {
             <h2>Prêt à améliorer votre <em>confort</em> ?</h2>
             <p>Gratuit, sans engagement, en 2 minutes.</p>
             <a className="cta-btn" href="#simulateur">Commencer</a>
-            {SITE.tel && <p className="final-tel">ou appelez-nous : <a href={telHref(SITE.tel)}>{SITE.tel}</a><br /><small>{SITE.horaires}</small></p>}
+            {SITE.tel && <p className="final-tel">ou appelez-nous : <a href={telHref(SITE.tel)}>{SITE.tel}</a>{SITE.horaires && <><br /><small>{SITE.horaires}</small></>}</p>}
           </div>
         </section>
       </main>
@@ -228,7 +228,7 @@ export default function Home() {
           <b>{nom()}</b>
           {(SITE.adresse || SITE.siret) && <div>{[SITE.adresse, SITE.siret && `SIRET ${SITE.siret}`].filter(Boolean).join(" · ")}</div>}
           {(SITE.tel || SITE.email) && <div>{SITE.tel && <a href={telHref(SITE.tel)}>{SITE.tel}</a>}{SITE.tel && SITE.email && " · "}{SITE.email && <a href={`mailto:${SITE.email}`}>{SITE.email}</a>}</div>}
-          <div>{SITE.horaires}</div>
+          {SITE.horaires && <div>{SITE.horaires}</div>}
           <div className="foot-l">© {new Date().getFullYear()} {nom()} · <a href="/mentions-legales">Mentions légales</a> · <a href="/confidentialite">Politique de confidentialité</a></div>
         </div>
       </footer>
