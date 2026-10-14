@@ -210,30 +210,31 @@ export default function Funnel() {
       {step === 1 && (
         <>
           <h2 className="fq-q">Êtes-vous propriétaire de votre logement ?</h2>
-          <div className="fq-opts two">
-            <Opt icon="🏠" title="Oui" on={a.proprio === "oui"} onClick={() => set("proprio", "oui")} />
-            <Opt icon="🔑" title="Non" on={a.proprio === "non"} onClick={() => set("proprio", "non")} />
-          </div>
+          <select aria-label="Êtes-vous propriétaire de votre logement ?" value={a.proprio} onChange={(e) => set("proprio", e.target.value as YN)}>
+            <option value="">Sélectionner…</option><option value="oui">Oui</option><option value="non">Non</option>
+          </select>
           {a.proprio === "non" && <p className="warn">Les aides à la rénovation concernent en général les propriétaires. Un conseiller pourra vous indiquer ce qui s'applique à votre cas.</p>}
         </>
       )}
       {step === 2 && (
         <>
           <h2 className="fq-q">Quel type de logement habitez-vous ?</h2>
-          <div className="fq-opts two">
-            <Opt icon="🏡" title="Maison individuelle" sub="Plain-pied ou à étages" on={a.type === "maison"} onClick={() => set("type", "maison")} />
-            <Opt icon="🏢" title="Appartement / copropriété" sub="En immeuble collectif" on={a.type === "appartement"} onClick={() => set("type", "appartement")} />
-          </div>
+          <select aria-label="Quel type de logement habitez-vous ?" value={a.type} onChange={(e) => set("type", e.target.value)}>
+            <option value="">Sélectionner…</option>
+            <option value="maison">Maison individuelle</option>
+            <option value="appartement">Appartement / copropriété</option>
+          </select>
         </>
       )}
       {step === 3 && (
         <>
           <h2 className="fq-q">Votre chauffage actuel fonctionne à quelle énergie ?</h2>
-          <div className="fq-opts">
-            <Opt icon="🔥" title="Gaz naturel" sub="Chaudière gaz de ville" on={a.chauff === "gaz"} onClick={() => set("chauff", "gaz")} />
-            <Opt icon="🛢️" title="Fioul" sub="Chaudière fioul avec cuve" on={a.chauff === "fioul"} onClick={() => set("chauff", "fioul")} />
-            <Opt icon="⚡" title="Électrique / autre" sub="Électrique, bois, granulés…" on={a.chauff === "electrique_autre"} onClick={() => set("chauff", "electrique_autre")} />
-          </div>
+          <select aria-label="Votre chauffage actuel fonctionne à quelle énergie ?" value={a.chauff} onChange={(e) => set("chauff", e.target.value)}>
+            <option value="">Sélectionner…</option>
+            <option value="gaz">Gaz naturel</option>
+            <option value="fioul">Fioul</option>
+            <option value="electrique_autre">Électrique / autre (bois, granulés…)</option>
+          </select>
         </>
       )}
       {step === 4 && (
