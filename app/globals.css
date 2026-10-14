@@ -272,3 +272,6 @@ input[aria-invalid=true]{border-color:var(--err)}
 .fq .btn{margin-top:14px}
 
 #simulateur{scroll-margin-top:88px}
+
+.fq input[aria-invalid="true"]{border-color:#C0392B}
+.fq label .err{display:block;margin-top:4px;font-size:12.5px}

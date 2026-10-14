@@ -23,20 +23,22 @@ const ANNEES: [string, string][] = [["apres_2009", "2009 ou après (moins de 15 
 const heureLabel = (h: string) => h.replace(":", "h");
 const dateLabel = (d: string) => new Date(d + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
 const BADGE: Record<string, [string, string]> = { bleu: ["#1D4ED8", "#fff"], jaune: ["#F59E2B", "#0E2A2F"], violet: ["#7C3AED", "#fff"], rose: ["#DB2777", "#fff"] };
+const FR_PHONE = /^(?:(?:\+|00)33|0)\s*[1-9](?:[\s.\-]*\d{2}){4}$/;
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+function fieldError(k: string, v: string): string {
+  const t = (v ?? "").trim();
+  if (k === "email") return t && !EMAIL.test(t) ? "E-mail invalide" : "";
+  if (!t) return "Champ obligatoire";
+  if (k === "code_postal" && !/^\d{5}$/.test(t)) return "Code postal à 5 chiffres";
+  if (k === "telephone" && !FR_PHONE.test(t)) return "Numéro de téléphone invalide";
+  if (k === "adresse" && t.length < 3) return "Adresse trop courte";
+  return "";
+}
 const COORD_KEYS = ["prenom", "nom", "adresse", "code_postal", "ville", "email", "telephone"];
 const LAST_Q = 6, RESULT = 7, TOTAL = 7;
 
 type A = { proprio: YN; type: string; chauff: string; annee: string; surface: string; nbPers: string; tranche: string; mpr: YN };
 const A0: A = { proprio: "", type: "", chauff: "", annee: "", surface: "", nbPers: "", tranche: "", mpr: "" };
-
-function Opt({ icon, title, sub, on, onClick }: { icon: string; title: string; sub?: string; on: boolean; onClick: () => void }) {
-  return (
-    <button type="button" className={"fq-opt" + (on ? " on" : "")} aria-pressed={on} onClick={onClick}>
-      <span className="fq-em" aria-hidden="true">{icon}</span>
-      <span><b>{title}</b>{sub && <small>{sub}</small>}</span>
-    </button>
-  );
-}
 
 export default function Funnel() {
   const [step, setStep] = useState(0); // 0 coordonnées · 1-6 questions · 7 résultat + rappel + consentement
@@ -46,7 +48,7 @@ export default function Funnel() {
   const [hp, setHp] = useState("");
   const [date, setDate] = useState("");
   const [heure, setHeure] = useState("");
-  const [errs, setErrs] = useState<Record<string, string[]>>({});
+  const [errs, setErrs] = useState<Record<string, string>>({});
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
@@ -64,7 +66,6 @@ export default function Funnel() {
   const set = <K extends keyof A>(k: K, v: A[K]) => setA((p) => ({ ...p, [k]: v }));
 
   function validate(s: number): string {
-    if (s === 0 && ["prenom", "nom", "adresse", "code_postal", "ville", "telephone"].some((k) => !(f[k] ?? "").trim())) return "Merci de remplir tous les champs obligatoires.";
     if (s === 1 && !a.proprio) return "Indiquez si vous êtes propriétaire.";
     if (s === 2 && !a.type) return "Indiquez votre type de logement.";
     if (s === 3 && !a.chauff) return "Indiquez votre énergie de chauffage actuelle.";
@@ -95,7 +96,7 @@ export default function Funnel() {
       const j = await r.json().catch(() => ({}));
       if (r.ok && j.resultat) { if (j.id !== undefined && j.token) setLead({ id: j.id, token: j.token }); setBusy(false); return j.resultat as Resultat; }
       const fe: Record<string, string[]> = j.fields ?? {};
-      setErrs(fe); setMsg(j.error ?? "Une erreur est survenue. Réessayez.");
+      setErrs(Object.fromEntries(Object.keys(fe).map((k) => [k, "Valeur invalide"]))); setMsg(j.error ?? "Une erreur est survenue. Réessayez.");
       if (Object.keys(fe).some((k) => COORD_KEYS.includes(k))) setStep(0); // coordonnée invalide : on y retourne
     } catch { setMsg("Connexion impossible. Réessayez."); }
     setBusy(false);
@@ -103,8 +104,14 @@ export default function Funnel() {
   }
 
   async function next() {
+    if (step === 0) {
+      const e: Record<string, string> = {};
+      FIELDS.forEach(([k]) => { const m = fieldError(k, f[k] ?? ""); if (m) e[k] = m; });
+      setErrs(e);
+      if (Object.keys(e).length) return setMsg(Object.values(e).includes("Champ obligatoire") ? "Merci de remplir tous les champs obligatoires." : "Merci de corriger les champs indiqués.");
+    }
     const m = validate(step);
-    setErrs({});
+    if (step !== 0) setErrs({});
     if (m) return setMsg(m);
     setMsg("");
     if (step < LAST_Q) return setStep(step + 1);
@@ -118,6 +125,7 @@ export default function Funnel() {
   async function finalize() {
     setMsg("");
     if (!date || !heure) return setMsg("Choisissez la date et l'heure de votre rappel.");
+    if (date < new Date().toISOString().slice(0, 10)) return setMsg("Choisissez une date à partir d'aujourd'hui.");
     if (!consent) return setMsg("Cochez la case ci-dessus pour finaliser le sondage.");
     if (!lead) return setMsg("Une erreur est survenue. Réessayez.");
     setBusy(true);
@@ -203,8 +211,11 @@ export default function Funnel() {
           <div className="grid">
             {FIELDS.map(([k, label, ac, type]) => (
               <label key={k} className={k === "adresse" ? "full" : ""}>{label}{k === "email" ? "" : " *"}
-                <input name={k} type={type} autoComplete={ac} required={k !== "email"} value={f[k] ?? ""} onChange={(e) => setF({ ...f, [k]: e.target.value })} aria-invalid={!!errs[k]} />
-                {errs[k] && <span className="err">Valeur invalide</span>}
+                <input name={k} type={type} autoComplete={ac} required={k !== "email"} value={f[k] ?? ""}
+                  onChange={(e) => { setF({ ...f, [k]: e.target.value }); if (errs[k]) setErrs(({ [k]: _x, ...r }) => r); }}
+                  onBlur={() => { const m = fieldError(k, f[k] ?? ""); setErrs(({ [k]: _x, ...r }) => (m ? { ...r, [k]: m } : r)); }}
+                  aria-invalid={!!errs[k]} />
+                {errs[k] && <span className="err">{errs[k]}</span>}
               </label>
             ))}
           </div>
@@ -218,7 +229,7 @@ export default function Funnel() {
         <>
           <h2 className="fq-q">Êtes-vous propriétaire de votre logement ?</h2>
           <select aria-label="Êtes-vous propriétaire de votre logement ?" value={a.proprio} onChange={(e) => set("proprio", e.target.value as YN)}>
-            <option value="">Sélectionner…</option><option value="oui">Oui</option><option value="non">Non</option>
+            <option value="">Sélectionner…</option><option value="oui">🏠 Oui</option><option value="non">🔑 Non</option>
           </select>
           {a.proprio === "non" && <p className="warn">Les aides à la rénovation concernent en général les propriétaires. Un conseiller pourra vous indiquer ce qui s'applique à votre cas.</p>}
         </>
@@ -228,8 +239,8 @@ export default function Funnel() {
           <h2 className="fq-q">Quel type de logement habitez-vous ?</h2>
           <select aria-label="Quel type de logement habitez-vous ?" value={a.type} onChange={(e) => set("type", e.target.value)}>
             <option value="">Sélectionner…</option>
-            <option value="maison">Maison individuelle</option>
-            <option value="appartement">Appartement / copropriété</option>
+            <option value="maison">🏡 Maison individuelle</option>
+            <option value="appartement">🏢 Appartement / copropriété</option>
           </select>
         </>
       )}
@@ -238,9 +249,9 @@ export default function Funnel() {
           <h2 className="fq-q">Votre chauffage actuel fonctionne à quelle énergie ?</h2>
           <select aria-label="Votre chauffage actuel fonctionne à quelle énergie ?" value={a.chauff} onChange={(e) => set("chauff", e.target.value)}>
             <option value="">Sélectionner…</option>
-            <option value="gaz">Gaz naturel</option>
-            <option value="fioul">Fioul</option>
-            <option value="electrique_autre">Électrique / autre (bois, granulés…)</option>
+            <option value="gaz">🔥 Gaz naturel</option>
+            <option value="fioul">🛢️ Fioul</option>
+            <option value="electrique_autre">⚡ Électrique / autre (bois, granulés…)</option>
           </select>
         </>
       )}
@@ -280,10 +291,9 @@ export default function Funnel() {
       {step === 6 && (
         <>
           <h2 className="fq-q">Avez-vous déjà bénéficié de MaPrimeRénov' ces 5 dernières années ?</h2>
-          <div className="fq-opts two">
-            <Opt icon="✅" title="Oui" on={a.mpr === "oui"} onClick={() => set("mpr", "oui")} />
-            <Opt icon="🚫" title="Non" on={a.mpr === "non"} onClick={() => set("mpr", "non")} />
-          </div>
+          <select aria-label="Avez-vous déjà bénéficié de MaPrimeRénov' ces 5 dernières années ?" value={a.mpr} onChange={(e) => set("mpr", e.target.value as YN)}>
+            <option value="">Sélectionner…</option><option value="oui">✅ Oui</option><option value="non">🚫 Non</option>
+          </select>
         </>
       )}
 
