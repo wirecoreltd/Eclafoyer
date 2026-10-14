@@ -42,7 +42,7 @@ export const leadSchema = z
     answers: answersSchema,
     rappel_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
     rappel_heure: z.enum(HEURES).optional(),
-    consent: z.boolean(),
+    consent: z.boolean().optional(), // plus exigé à l'enregistrement : le consentement est recueilli à l'étape du créneau
     preview: z.boolean().optional(), // aperçu du résultat : rien n'est enregistré
     website: z.string().optional(),
   })
@@ -53,7 +53,6 @@ export const leadSchema = z
       if (!Number.isFinite(t) || t < Date.now() - 2 * 86400000 || t > Date.now() + 120 * 86400000)
         ctx.addIssue({ code: "custom", path: ["rappel_date"], message: "Date invalide" });
     }
-    if (!d.preview && d.consent !== true) ctx.addIssue({ code: "custom", path: ["consent"], message: "Consentement requis" });
   });
 
 // Étape « créneau de rappel » : elle complète une demande déjà enregistrée (identifiée par son id + un jeton à usage unique).
@@ -62,5 +61,6 @@ export const rappelSchema = z.object({
   token: z.string().min(8).max(80),
   rappel_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   rappel_heure: z.enum(HEURES),
+  consent: z.literal(true), // case « J'accepte d'être contacté(e)… » cochée
   website: z.string().optional(),
 });

@@ -21,7 +21,7 @@ export default async function Admin({ searchParams }: { searchParams: Promise<Re
     return {
       id: String(l.id),
       date: new Date(l.created_at).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short", timeZone: TZ }),
-      rappel: s.rappel_date ? `${new Date(String(s.rappel_date) + "T12:00:00Z").toLocaleDateString("fr-FR", { timeZone: TZ })} ${s.rappel_heure ?? ""}`.trim() : "",
+      rappel: !l.consent_at ? "⚠ Sans consentement : ne pas appeler" : s.rappel_date ? `${new Date(String(s.rappel_date) + "T12:00:00Z").toLocaleDateString("fr-FR", { timeZone: TZ })} ${s.rappel_heure ?? ""}`.trim() : "",
       prenom: str(l.prenom), nom: str(l.nom),
       telephone: phoneNational(l.telephone), telHref: `tel:${l.telephone ?? ""}`,
       email: str(l.email), codePostal: str(l.code_postal), ville: str(l.ville), motif: MOTIF_LABEL,

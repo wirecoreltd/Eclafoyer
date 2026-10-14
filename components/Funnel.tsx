@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { dpoMail, nom } from "@/lib/site";
+import { tranchesRevenu, zoneFromCodePostal } from "@/lib/plafonds";
 
 type YN = "" | "oui" | "non";
 type Resultat = { eligible: boolean; titre: string; message: string; detail: string; profil?: string };
@@ -17,7 +18,6 @@ const CONSENT = () =>
   `J'accepte d'être contacté(e) par téléphone par ${nom()} au sujet de ma demande, et que les informations saisies (dont mes revenus) soient utilisées pour étudier mon éligibilité. Mes données sont conservées 3 ans maximum ; je peux exercer mes droits en écrivant à ${dpoMail()}.`;
 const GRATUIT = "Ce sondage est totalement gratuit et ne vous engage à rien.";
 const HEURES = ["09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00"];
-const TRANCHES = ["Moins de 35 270 €", "Entre 35 270 € et 42 933 €", "Entre 42 933 € et 60 051 €", "Plus de 60 051 €"]; // l'équivalent chiffré est côté serveur
 const SURFACES = ["Moins de 70 m²", "Entre 70 et 90 m²", "Plus de 90 m²"]; // l'équivalent est enregistré côté serveur
 const ANNEES: [string, string][] = [["apres_2009", "2009 ou après (moins de 15 ans)"], ["avant_2009", "Avant 2009 (plus de 15 ans)"]];
 const heureLabel = (h: string) => h.replace(":", "h");
@@ -52,6 +52,8 @@ export default function Funnel() {
   const [done, setDone] = useState(false);
   const [res, setRes] = useState<Resultat | null>(null);
   const [lead, setLead] = useState<{ id: string | number; token: string } | null>(null);
+  // Les 4 choix du revenu (bleu, jaune, violet, rose) dépendent de la zone (code postal) et du nombre de personnes.
+  const labels = a.nbPers ? tranchesRevenu(zoneFromCodePostal((f.code_postal ?? "").trim()), Number(a.nbPers)) : [];
   const set = <K extends keyof A>(k: K, v: A[K]) => setA((p) => ({ ...p, [k]: v }));
 
   function validate(s: number): string {
@@ -68,7 +70,6 @@ export default function Funnel() {
       if (a.nbPers === "" || !Number.isInteger(n) || n < 1 || n > 20) return "Indiquez le nombre de personnes de votre foyer fiscal.";
       if (a.tranche === "") return "Indiquez votre revenu fiscal de référence (sur votre avis d'imposition).";
     }
-    if (s === 6 && !consent) return "Cochez la case ci-dessus pour finaliser le sondage.";
     return "";
   }
 
@@ -82,7 +83,7 @@ export default function Funnel() {
     try {
       const r = await fetch("/api/leads", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...f, answers, consent, preview: false, website: hp }),
+        body: JSON.stringify({ ...f, answers, preview: false, website: hp }),
       });
       const j = await r.json().catch(() => ({}));
       if (r.ok && j.resultat) { if (j.id !== undefined && j.token) setLead({ id: j.id, token: j.token }); setBusy(false); return j.resultat as Resultat; }
@@ -110,12 +111,13 @@ export default function Funnel() {
   async function finalize() {
     setMsg("");
     if (!date || !heure) return setMsg("Choisissez la date et l'heure de votre rappel.");
+    if (!consent) return setMsg("Cochez la case ci-dessus pour finaliser le sondage.");
     if (!lead) return setMsg("Une erreur est survenue. Réessayez.");
     setBusy(true);
     try {
       const r = await fetch("/api/leads/rappel", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: lead.id, token: lead.token, rappel_date: date, rappel_heure: heure, website: hp }),
+        body: JSON.stringify({ id: lead.id, token: lead.token, rappel_date: date, rappel_heure: heure, consent: true, website: hp }),
       });
       const j = await r.json().catch(() => ({}));
       if (r.ok) { setDone(true); setBusy(false); return; }
@@ -143,7 +145,7 @@ export default function Funnel() {
       ["Propriétaire", a.proprio === "oui" ? "Oui" : "Non"],
       ["Surface chauffée", SURFACES[Number(a.surface)]],
       ["Personnes du foyer fiscal", a.nbPers],
-      ["Revenu fiscal de référence", TRANCHES[Number(a.tranche)]],
+      ["Revenu fiscal de référence", labels[Number(a.tranche)] ?? ""],
       ...(a.mpr ? ([["MaPrimeRénov' (5 ans)", a.mpr === "oui" ? "Oui" : "Non"]] as [string, string][]) : []),
     ];
     const [bg, fg] = BADGE[res.profil ?? ""] ?? ["", ""];
@@ -162,6 +164,7 @@ export default function Funnel() {
         </div>
 
         <p className="strong" style={{ margin: "18px 0 10px" }}>Un conseiller prendra contact avec vous à l'heure de votre choix afin de discuter de la faisabilité de votre projet.</p>
+        <label className="chk" style={{ marginTop: 0, marginBottom: 14 }}><input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} /><span>{CONSENT()}</span></label>
         <div className="grid">
           <label>Date *
             <input type="date" min={new Date().toISOString().slice(0, 10)} value={date} onChange={(e) => setDate(e.target.value)} />
@@ -252,15 +255,15 @@ export default function Funnel() {
         <>
           <h2 className="fq-q">Votre foyer</h2>
           <label>Nombre de personnes dans le foyer fiscal *
-            <select value={a.nbPers} onChange={(e) => set("nbPers", e.target.value)}>
+            <select value={a.nbPers} onChange={(e) => setA((p) => ({ ...p, nbPers: e.target.value, tranche: "" }))}>
               <option value="">Sélectionner…</option>
               {["1", "2", "3", "4"].map((n) => <option key={n} value={n}>{n}</option>)}
               <option value="5">5 ou plus</option>
             </select>
           </label>
           <label>Revenu fiscal de référence (€) *
-            <select value={a.tranche} onChange={(e) => set("tranche", e.target.value)}>
-              <option value="">Sélectionner…</option>{TRANCHES.map((t, i) => <option key={t} value={i}>{t}</option>)}
+            <select value={a.tranche} disabled={!a.nbPers} onChange={(e) => set("tranche", e.target.value)}>
+              <option value="">{a.nbPers ? "Sélectionner…" : "Choisissez d'abord le nombre de personnes"}</option>{labels.map((t, i) => <option key={t} value={i}>{t}</option>)}
             </select>
             <small className="help">Indiqué sur votre dernier avis d'imposition.</small>
           </label>
@@ -273,7 +276,6 @@ export default function Funnel() {
             <Opt icon="✅" title="Oui" on={a.mpr === "oui"} onClick={() => set("mpr", "oui")} />
             <Opt icon="🚫" title="Non" on={a.mpr === "non"} onClick={() => set("mpr", "non")} />
           </div>
-          <label className="chk" style={{ marginTop: 18 }}><input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} /><span>{CONSENT()}</span></label>
         </>
       )}
 

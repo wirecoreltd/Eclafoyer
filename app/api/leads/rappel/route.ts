@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
-import { rappelSchema } from "@/lib/schema";
+import { CONSENT_VERSION, rappelSchema } from "@/lib/schema";
 import { supabaseAdmin } from "@/lib/supabase";
 
 const FENETRE_MS = 3 * 60 * 60 * 1000; // le créneau doit être choisi dans les 3 h suivant l'enregistrement
 
-// Ajoute la date et l'heure de rappel à une demande déjà enregistrée.
+// Ajoute le consentement et la date/heure de rappel à une demande déjà enregistrée.
 export async function POST(req: Request) {
   const body = await req.json().catch(() => null);
   const parsed = rappelSchema.safeParse(body);
-  if (!parsed.success) return NextResponse.json({ error: "Choisissez la date et l'heure de votre rappel." }, { status: 422 });
+  if (!parsed.success) return NextResponse.json({ error: "Choisissez la date et l'heure de votre rappel et cochez la case." }, { status: 422 });
   const { id, token, rappel_date, rappel_heure, website } = parsed.data;
   if (website) return NextResponse.json({ ok: true }); // champ piège
 
@@ -24,7 +24,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Demande introuvable ou déjà complétée." }, { status: 409 });
 
   const { rappel_token: _t, ...reste } = sim;
-  const { error: upErr } = await db.from("leads").update({ simulation: { ...reste, rappel_date, rappel_heure } }).eq("id", id);
+  const { error: upErr } = await db.from("leads").update({ simulation: { ...reste, rappel_date, rappel_heure }, consent_at: new Date().toISOString(), consent_version: CONSENT_VERSION }).eq("id", id);
   if (upErr) {
     console.error("update rappel:", upErr.message);
     return NextResponse.json({ error: "Enregistrement impossible. Réessayez dans un instant." }, { status: 500 });

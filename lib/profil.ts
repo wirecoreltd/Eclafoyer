@@ -1,35 +1,19 @@
-// SERVEUR UNIQUEMENT : ne jamais importer ce fichier depuis un composant "use client".
-// Les plafonds et montants ci-dessous ne doivent pas être envoyés au navigateur.
-// Plafonds de ressources MaPrimeRénov' 2026 (revenu fiscal de référence). À mettre à jour chaque année.
+// Calcul du profil et textes du résultat : exécuté côté SERVEUR (ne pas importer depuis un composant "use client").
+// Les plafonds de ressources (publics) sont dans lib/plafonds.ts, à mettre à jour chaque année.
+import { seuils, zoneFromCodePostal, type Zone } from "@/lib/plafonds";
+
 export type Profil = "bleu" | "jaune" | "violet" | "rose";
-export type Zone = "idf" | "hors_idf";
+export type { Zone };
 
 const PAC_COUT = 14500;
 const PAC_RESTE_A_CHARGE_BLEU = 1; // reste à charge estimé (symbolique) pour le profil bleu
 const eur = (n: number) => n.toLocaleString("fr-FR").replace(/\u202f/g, " ") + " €";
 
-// Seuils [bleu, jaune, violet] pour 1 à 5 personnes + montant par personne supplémentaire.
-const PLAFONDS: Record<Zone, { base: number[][]; extra: number[] }> = {
-  hors_idf: {
-    base: [[17363, 22259, 31185], [25393, 32553, 45842], [30540, 39148, 55196], [35676, 45735, 64550], [40835, 52348, 73907]],
-    extra: [5151, 6598, 9357],
-  },
-  idf: {
-    base: [[24031, 29253, 40851], [35270, 42933, 60051], [42357, 51564, 71846], [49455, 60208, 84562], [56580, 68877, 96817]],
-    extra: [7116, 8663, 12257],
-  },
-};
-
-const IDF_DEPARTEMENTS = ["75", "77", "78", "91", "92", "93", "94", "95"];
-export const zoneFromCodePostal = (cp: string): Zone => (IDF_DEPARTEMENTS.includes(cp.slice(0, 2)) ? "idf" : "hors_idf");
-
 export function getProfil(rfr: number, personnes: number, zone: Zone): Profil {
-  const t = PLAFONDS[zone];
-  const n = Math.max(1, Math.floor(personnes));
-  const seuils = n <= 5 ? t.base[n - 1] : t.base[4].map((v, i) => v + (n - 5) * t.extra[i]);
-  if (rfr <= seuils[0]) return "bleu";
-  if (rfr <= seuils[1]) return "jaune";
-  if (rfr <= seuils[2]) return "violet";
+  const s = seuils(zone, personnes);
+  if (rfr <= s[0]) return "bleu";
+  if (rfr <= s[1]) return "jaune";
+  if (rfr <= s[2]) return "violet";
   return "rose";
 }
 
@@ -56,15 +40,6 @@ export const RESULTAT_GENERIQUE: Resultat = {
   message: "Un conseiller vous rappelle très vite",
   detail: "Il étudiera votre situation avec vous, sans engagement.",
 };
-
-// Tranches du menu « Revenu fiscal de référence ». Pour ne jamais promettre à tort le « 1 € », on évalue avec le HAUT de la tranche.
-// Conséquence : un ménage dont les plafonds sont plus bas que ces tranches (ex. 1 personne) est traité plus prudemment.
-export const TRANCHES_REVENU = [
-  { label: "Moins de 35 270 €", rfr: 35270 },
-  { label: "Entre 35 270 € et 42 933 €", rfr: 42933 },
-  { label: "Entre 42 933 € et 60 051 €", rfr: 60051 },
-  { label: "Plus de 60 051 €", rfr: 10_000_000 },
-] as const;
 
 // Tranches du menu « Surface habitable ».
 export const SURFACES = ["Moins de 70 m²", "Entre 70 et 90 m²", "Plus de 90 m²"] as const;
