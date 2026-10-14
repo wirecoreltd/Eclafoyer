@@ -16,7 +16,8 @@ const yn = z.enum(["oui", "non"]);
 const answersSchema = z
   .object({
     proprietaire: yn,
-    surface_habitable: z.coerce.number().min(9).max(2000),
+    surface_habitable: z.coerce.number().min(9).max(2000).optional(), // montant exact (facultatif)
+    surface_tranche: z.coerce.number().int().min(0).max(2).optional(), // tranche choisie dans le menu (0 à 2)
     personnes_foyer_fiscal: z.coerce.number().int().min(1).max(20),
     revenu_fiscal_reference: z.coerce.number().min(0).max(10_000_000).optional(), // montant exact (facultatif)
     revenu_tranche: z.coerce.number().int().min(0).max(3).optional(), // tranche choisie dans le menu (0 à 3)
@@ -25,7 +26,8 @@ const answersSchema = z
     chauffage: z.enum(["gaz", "fioul", "electrique_autre"]).optional(),
     annee_construction: z.enum(["apres_2009", "avant_2009"]).optional(),
   })
-  .refine((v) => v.revenu_fiscal_reference !== undefined || v.revenu_tranche !== undefined, { path: ["revenu_tranche"], message: "Revenu requis" });
+  .refine((v) => v.revenu_fiscal_reference !== undefined || v.revenu_tranche !== undefined, { path: ["revenu_tranche"], message: "Revenu requis" })
+  .refine((v) => v.surface_habitable !== undefined || v.surface_tranche !== undefined, { path: ["surface_tranche"], message: "Surface requise" });
 
 // Formulaire unique : coordonnées + réponses + date/heure de rappel + consentement.
 export const leadSchema = z
@@ -46,7 +48,6 @@ export const leadSchema = z
   })
   .superRefine((d, ctx) => {
     if (d.email && !EMAIL.test(d.email)) ctx.addIssue({ code: "custom", path: ["email"], message: "E-mail invalide" });
-    if (!d.preview && (!d.rappel_date || !d.rappel_heure)) ctx.addIssue({ code: "custom", path: ["rappel_date"], message: "Date et heure requises" });
     if (d.rappel_date) {
       const t = Date.parse(d.rappel_date + "T00:00:00Z");
       if (!Number.isFinite(t) || t < Date.now() - 2 * 86400000 || t > Date.now() + 120 * 86400000)
@@ -54,3 +55,12 @@ export const leadSchema = z
     }
     if (!d.preview && d.consent !== true) ctx.addIssue({ code: "custom", path: ["consent"], message: "Consentement requis" });
   });
+
+// Étape « créneau de rappel » : elle complète une demande déjà enregistrée (identifiée par son id + un jeton à usage unique).
+export const rappelSchema = z.object({
+  id: z.union([z.string().min(1).max(64), z.number()]),
+  token: z.string().min(8).max(80),
+  rappel_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  rappel_heure: z.enum(HEURES),
+  website: z.string().optional(),
+});

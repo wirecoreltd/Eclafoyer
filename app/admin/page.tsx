@@ -25,7 +25,7 @@ export default async function Admin({ searchParams }: { searchParams: Promise<Re
       prenom: str(l.prenom), nom: str(l.nom),
       telephone: phoneNational(l.telephone), telHref: `tel:${l.telephone ?? ""}`,
       email: str(l.email), codePostal: str(l.code_postal), ville: str(l.ville), motif: MOTIF_LABEL,
-      proprietaire: str(s.proprietaire), surface: str(s.surface_habitable), personnes: str(s.personnes_foyer_fiscal),
+      proprietaire: str(s.proprietaire), surface: str(s.surface_habitable) || str(s.surface_tranche), personnes: str(s.personnes_foyer_fiscal),
       revenu: s.revenu_fiscal_reference != null ? Number(s.revenu_fiscal_reference).toLocaleString("fr-FR") + " €" : str(s.revenu_tranche),
       mpr5: str(s.maprimerenov_5_ans), zone: str(s.zone), profil: str(s.profil_maprimerenov), eligible: str(s.eligible_pac_1_euro),
       statut: l.statut ?? "nouveau",

@@ -18,6 +18,7 @@ const CONSENT = () =>
 const GRATUIT = "Ce sondage est totalement gratuit et ne vous engage à rien.";
 const HEURES = ["09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00"];
 const TRANCHES = ["Moins de 35 270 €", "Entre 35 270 € et 42 933 €", "Entre 42 933 € et 60 051 €", "Plus de 60 051 €"]; // l'équivalent chiffré est côté serveur
+const SURFACES = ["Moins de 70 m²", "Entre 70 et 90 m²", "Plus de 90 m²"]; // l'équivalent est enregistré côté serveur
 const ANNEES: [string, string][] = [["apres_2009", "2009 ou après (moins de 15 ans)"], ["avant_2009", "Avant 2009 (plus de 15 ans)"]];
 const heureLabel = (h: string) => h.replace(":", "h");
 const dateLabel = (d: string) => new Date(d + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
@@ -50,6 +51,7 @@ export default function Funnel() {
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const [res, setRes] = useState<Resultat | null>(null);
+  const [lead, setLead] = useState<{ id: string | number; token: string } | null>(null);
   const set = <K extends keyof A>(k: K, v: A[K]) => setA((p) => ({ ...p, [k]: v }));
 
   function validate(s: number): string {
@@ -58,21 +60,21 @@ export default function Funnel() {
     if (s === 2 && !a.type) return "Indiquez votre type de logement.";
     if (s === 3 && !a.chauff) return "Indiquez votre énergie de chauffage actuelle.";
     if (s === 4) {
-      const n = Number(a.surface);
       if (!a.annee) return "Indiquez l'année de construction de votre logement.";
-      if (a.surface === "" || !Number.isFinite(n) || n < 9 || n > 2000) return "Indiquez une surface habitable valide (en m²).";
+      if (a.surface === "") return "Indiquez votre surface chauffée.";
     }
     if (s === 5) {
       const n = Number(a.nbPers);
       if (a.nbPers === "" || !Number.isInteger(n) || n < 1 || n > 20) return "Indiquez le nombre de personnes de votre foyer fiscal.";
       if (a.tranche === "") return "Indiquez votre revenu fiscal de référence (sur votre avis d'imposition).";
     }
+    if (s === 6 && !consent) return "Cochez la case ci-dessus pour finaliser le sondage.";
     return "";
   }
 
-  async function send(consentOk: boolean, preview: boolean) {
+  async function send() {
     const answers: Record<string, string | number> = {
-      proprietaire: a.proprio, surface_habitable: Number(a.surface), personnes_foyer_fiscal: Number(a.nbPers),
+      proprietaire: a.proprio, surface_tranche: Number(a.surface), personnes_foyer_fiscal: Number(a.nbPers),
       revenu_tranche: Number(a.tranche), type_logement: a.type, chauffage: a.chauff, annee_construction: a.annee,
     };
     if (a.mpr) answers.maprimerenov_5_ans = a.mpr;
@@ -80,13 +82,13 @@ export default function Funnel() {
     try {
       const r = await fetch("/api/leads", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...f, answers, rappel_date: date || undefined, rappel_heure: heure || undefined, consent: consentOk, preview, website: hp }),
+        body: JSON.stringify({ ...f, answers, consent, preview: false, website: hp }),
       });
       const j = await r.json().catch(() => ({}));
-      if (r.ok && j.resultat) { setBusy(false); return j.resultat as Resultat; }
+      if (r.ok && j.resultat) { if (j.id !== undefined && j.token) setLead({ id: j.id, token: j.token }); setBusy(false); return j.resultat as Resultat; }
       const fe: Record<string, string[]> = j.fields ?? {};
       setErrs(fe); setMsg(j.error ?? "Une erreur est survenue. Réessayez.");
-      if (preview && Object.keys(fe).some((k) => COORD_KEYS.includes(k))) setStep(0); // coordonnée invalide : on y retourne
+      if (Object.keys(fe).some((k) => COORD_KEYS.includes(k))) setStep(0); // coordonnée invalide : on y retourne
     } catch { setMsg("Connexion impossible. Réessayez."); }
     setBusy(false);
     return null;
@@ -98,18 +100,28 @@ export default function Funnel() {
     if (m) return setMsg(m);
     setMsg("");
     if (step < LAST_Q) return setStep(step + 1);
-    const r = await send(false, true); // le serveur calcule le résultat, rien n'est enregistré à ce stade
-    if (r) { setRes(r); setConsent(false); setStep(RESULT); }
+    if (lead && res) return setStep(RESULT); // déjà enregistré : on ne crée pas de doublon
+    const r = await send(); // le serveur calcule le résultat ET enregistre toutes les données
+    if (r) { setRes(r); setStep(RESULT); }
   }
   const back = () => { setMsg(""); setStep(Math.max(0, step - 1)); };
 
-  // Le consentement donné en fin de récapitulatif finalise le sondage et enregistre la demande.
+  // Choix du créneau : complète la demande déjà enregistrée.
   async function finalize() {
     setMsg("");
     if (!date || !heure) return setMsg("Choisissez la date et l'heure de votre rappel.");
-    if (!consent) return setMsg("Cochez la case ci-dessus pour finaliser le sondage.");
-    const r = await send(true, false);
-    if (r) { setDone(true); setErrs({}); }
+    if (!lead) return setMsg("Une erreur est survenue. Réessayez.");
+    setBusy(true);
+    try {
+      const r = await fetch("/api/leads/rappel", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: lead.id, token: lead.token, rappel_date: date, rappel_heure: heure, website: hp }),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (r.ok) { setDone(true); setBusy(false); return; }
+      setMsg(j.error ?? "Une erreur est survenue. Réessayez.");
+    } catch { setMsg("Connexion impossible. Réessayez."); }
+    setBusy(false);
   }
 
   if (step === RESULT && res && done) {
@@ -129,7 +141,7 @@ export default function Funnel() {
       ["Téléphone", f.telephone ?? ""],
       ...(f.email ? ([["E-mail", f.email]] as [string, string][]) : []),
       ["Propriétaire", a.proprio === "oui" ? "Oui" : "Non"],
-      ["Surface habitable", `${a.surface} m²`],
+      ["Surface chauffée", SURFACES[Number(a.surface)]],
       ["Personnes du foyer fiscal", a.nbPers],
       ["Revenu fiscal de référence", TRANCHES[Number(a.tranche)]],
       ...(a.mpr ? ([["MaPrimeRénov' (5 ans)", a.mpr === "oui" ? "Oui" : "Non"]] as [string, string][]) : []),
@@ -161,10 +173,8 @@ export default function Funnel() {
           </label>
         </div>
 
-        <label className="chk"><input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} /><span>{CONSENT()}</span></label>
         {msg && <p className="err" role="alert">{msg}</p>}
         <button className="btn" disabled={busy} onClick={finalize}>{busy ? "Envoi…" : "Envoyer"}</button>
-        <button type="button" className="linkbtn" onClick={() => { setMsg(""); setStep(0); }}>Modifier mes réponses</button>
       </div>
     );
   }
@@ -231,8 +241,10 @@ export default function Funnel() {
               <option value="">Sélectionner…</option>{ANNEES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
             </select>
           </label>
-          <label>Surface habitable (m²) *
-            <input type="number" inputMode="numeric" min={9} max={2000} value={a.surface} onChange={(e) => set("surface", e.target.value)} />
+          <label>Surface chauffée *
+            <select value={a.surface} onChange={(e) => set("surface", e.target.value)}>
+              <option value="">Sélectionner…</option>{SURFACES.map((t, i) => <option key={t} value={i}>{t}</option>)}
+            </select>
           </label>
         </>
       )}
@@ -261,6 +273,7 @@ export default function Funnel() {
             <Opt icon="✅" title="Oui" on={a.mpr === "oui"} onClick={() => set("mpr", "oui")} />
             <Opt icon="🚫" title="Non" on={a.mpr === "non"} onClick={() => set("mpr", "non")} />
           </div>
+          <label className="chk" style={{ marginTop: 18 }}><input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} /><span>{CONSENT()}</span></label>
         </>
       )}
 

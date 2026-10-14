@@ -75,7 +75,7 @@ export function leadsToCsv(leads: Lead[]): string {
       new Date(l.created_at).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short", timeZone: "Europe/Paris" }),
       l.prenom, l.nom, phoneNational(l.telephone), l.email, l.adresse, l.code_postal, l.ville,
       MOTIF_LABEL, l.statut, s.rappel_date, s.rappel_heure,
-      s.proprietaire, s.surface_habitable, s.personnes_foyer_fiscal, s.revenu_fiscal_reference ?? s.revenu_tranche,
+      s.proprietaire, s.surface_habitable ?? s.surface_tranche, s.personnes_foyer_fiscal, s.revenu_fiscal_reference ?? s.revenu_tranche,
       s.maprimerenov_5_ans, s.zone, s.profil_maprimerenov, s.eligible_pac_1_euro,
     ].map(csvCell).join(";");
   });

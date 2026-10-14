@@ -65,3 +65,6 @@ export const TRANCHES_REVENU = [
   { label: "Entre 42 933 € et 60 051 €", rfr: 60051 },
   { label: "Plus de 60 051 €", rfr: 10_000_000 },
 ] as const;
+
+// Tranches du menu « Surface habitable ».
+export const SURFACES = ["Moins de 70 m²", "Entre 70 et 90 m²", "Plus de 90 m²"] as const;

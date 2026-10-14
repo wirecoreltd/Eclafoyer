@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
+import { randomUUID } from "node:crypto";
 import { CONSENT_VERSION, leadSchema, normalizePhone } from "@/lib/schema";
-import { RESULTAT_GENERIQUE, TRANCHES_REVENU, evaluerPac } from "@/lib/profil";
+import { RESULTAT_GENERIQUE, SURFACES, TRANCHES_REVENU, evaluerPac } from "@/lib/profil";
 import { supabaseAdmin } from "@/lib/supabase";
 
 export async function POST(req: Request) {
@@ -23,21 +24,26 @@ export async function POST(req: Request) {
     proprietaire: answers.proprietaire,
   });
 
-  // Aperçu : on calcule le résultat mais on n'enregistre rien tant que la personne n'a pas donné son accord.
+  // Aperçu (non utilisé par le formulaire actuel) : on calcule sans enregistrer.
   if (preview) return NextResponse.json({ ok: true, resultat: ev.resultat });
 
+  // « Voir mon résultat » : toutes les données sont enregistrées ici (le consentement est coché juste avant).
+  // Le créneau de rappel est ajouté ensuite, via /api/leads/rappel, grâce au jeton renvoyé ci-dessous.
+  const token = randomUUID();
   const simulation: Record<string, unknown> = {
     interet: "pompe_a_chaleur",
     ...answers,
     ...(tranche ? { revenu_tranche: tranche.label } : {}),
+    ...(answers.surface_tranche !== undefined ? { surface_tranche: SURFACES[answers.surface_tranche] } : {}),
     zone: ev.zone,
     profil_maprimerenov: ev.profil,
     eligible_pac_1_euro: ev.resultat.eligible ? "oui" : "non",
     rappel_date,
     rappel_heure,
+    rappel_token: token,
   };
 
-  const { error } = await supabaseAdmin().from("leads").insert({
+  const { data, error } = await supabaseAdmin().from("leads").insert({
     ...d,
     motif: "energies",
     email: d.email || null,
@@ -45,10 +51,10 @@ export async function POST(req: Request) {
     simulation,
     consent_at: new Date().toISOString(),
     consent_version: CONSENT_VERSION,
-  });
-  if (error) {
-    console.error("insert lead:", error.message);
+  }).select("id").single();
+  if (error || !data) {
+    console.error("insert lead:", error?.message);
     return NextResponse.json({ error: "Enregistrement impossible. Réessayez dans un instant." }, { status: 500 });
   }
-  return NextResponse.json({ ok: true, resultat: ev.resultat });
+  return NextResponse.json({ ok: true, resultat: ev.resultat, id: data.id, token });
 }
