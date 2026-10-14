@@ -211,7 +211,7 @@ export default function Funnel() {
         <>
           <h2 className="fq-q">Êtes-vous propriétaire de votre logement ?</h2>
           <select aria-label="Êtes-vous propriétaire de votre logement ?" value={a.proprio} onChange={(e) => set("proprio", e.target.value as YN)}>
-            <option value="">Sélectionner…</option><option value="oui">Oui</option><option value="non">Non</option>
+            <option value="">Sélectionner…</option><option value="oui">🏠 Oui</option><option value="non">🔑 Non</option>
           </select>
           {a.proprio === "non" && <p className="warn">Les aides à la rénovation concernent en général les propriétaires. Un conseiller pourra vous indiquer ce qui s'applique à votre cas.</p>}
         </>
@@ -221,8 +221,8 @@ export default function Funnel() {
           <h2 className="fq-q">Quel type de logement habitez-vous ?</h2>
           <select aria-label="Quel type de logement habitez-vous ?" value={a.type} onChange={(e) => set("type", e.target.value)}>
             <option value="">Sélectionner…</option>
-            <option value="maison">Maison individuelle</option>
-            <option value="appartement">Appartement / copropriété</option>
+            <option value="maison">🏡 Maison individuelle</option>
+            <option value="appartement">🏢 Appartement / copropriété</option>
           </select>
         </>
       )}
@@ -231,9 +231,9 @@ export default function Funnel() {
           <h2 className="fq-q">Votre chauffage actuel fonctionne à quelle énergie ?</h2>
           <select aria-label="Votre chauffage actuel fonctionne à quelle énergie ?" value={a.chauff} onChange={(e) => set("chauff", e.target.value)}>
             <option value="">Sélectionner…</option>
-            <option value="gaz">Gaz naturel</option>
-            <option value="fioul">Fioul</option>
-            <option value="electrique_autre">Électrique / autre (bois, granulés…)</option>
+            <option value="gaz">🔥 Gaz naturel</option>
+            <option value="fioul">🛢️ Fioul</option>
+            <option value="electrique_autre">⚡ Électrique / autre (bois, granulés…)</option>
           </select>
         </>
       )}
