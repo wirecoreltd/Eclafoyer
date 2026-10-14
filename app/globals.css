@@ -257,3 +257,16 @@ input[aria-invalid=true]{border-color:var(--err)}
 .final-photo{background:linear-gradient(90deg,rgba(10,79,82,.95) 35%,rgba(10,79,82,.6)),url(/images/hero.jpg) right center/cover no-repeat;color:#fff}
 .final-photo h2{color:#fff}.final-photo h2 em{color:var(--leaf)}.final-photo p{color:#D5E8E6}
 .final-photo .final-tel a{color:#fff}
+
+/* ============ Parcours en étapes (formulaire) ============ */
+.fq .kicker{margin-bottom:8px}
+.fq .sub{margin-top:4px}
+.fq-q{font-size:21px!important;margin:4px 0 14px!important}
+.fq-opts{display:grid;gap:10px;margin-bottom:6px}.fq-opts.two{grid-template-columns:1fr 1fr}
+@media(max-width:480px){.fq-opts.two{grid-template-columns:1fr}}
+.fq-opt{display:flex;align-items:center;gap:12px;width:100%;text-align:left;font:inherit;color:inherit;background:#F6F9F5;border:2px solid var(--line);border-radius:14px;padding:14px;cursor:pointer;transition:border-color .15s,background .15s}
+.fq-opt:hover{border-color:var(--teal)}
+.fq-opt.on{border-color:var(--teal);background:var(--leaf-l)}
+.fq-opt b{display:block;font-size:16px}.fq-opt small{display:block;color:var(--mut);font-size:13px}
+.fq-em{font-size:26px;line-height:1}
+.fq .btn{margin-top:14px}
