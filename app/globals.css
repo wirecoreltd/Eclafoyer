@@ -270,3 +270,5 @@ input[aria-invalid=true]{border-color:var(--err)}
 .fq-opt b{display:block;font-size:16px}.fq-opt small{display:block;color:var(--mut);font-size:13px}
 .fq-em{font-size:26px;line-height:1}
 .fq .btn{margin-top:14px}
+
+#simulateur{scroll-margin-top:88px}

@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { dpoMail, nom } from "@/lib/site";
 import { tranchesRevenu, zoneFromCodePostal } from "@/lib/plafonds";
 
@@ -54,6 +54,13 @@ export default function Funnel() {
   const [lead, setLead] = useState<{ id: string | number; token: string } | null>(null);
   // Les 4 choix du revenu (bleu, jaune, violet, rose) dépendent de la zone (code postal) et du nombre de personnes.
   const labels = a.nbPers ? tranchesRevenu(zoneFromCodePostal((f.code_postal ?? "").trim()), Number(a.nbPers)) : [];
+  // À chaque changement d'étape, on remonte au début du formulaire (sans saut si son début est déjà visible).
+  const mounted = useRef(false);
+  useEffect(() => {
+    if (!mounted.current) { mounted.current = true; return; }
+    const el = document.getElementById("simulateur");
+    if (el && el.getBoundingClientRect().top < 80) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [step, done]);
   const set = <K extends keyof A>(k: K, v: A[K]) => setA((p) => ({ ...p, [k]: v }));
 
   function validate(s: number): string {
@@ -211,7 +218,7 @@ export default function Funnel() {
         <>
           <h2 className="fq-q">Êtes-vous propriétaire de votre logement ?</h2>
           <select aria-label="Êtes-vous propriétaire de votre logement ?" value={a.proprio} onChange={(e) => set("proprio", e.target.value as YN)}>
-            <option value="">Sélectionner…</option><option value="oui">🏠 Oui</option><option value="non">🔑 Non</option>
+            <option value="">Sélectionner…</option><option value="oui">Oui</option><option value="non">Non</option>
           </select>
           {a.proprio === "non" && <p className="warn">Les aides à la rénovation concernent en général les propriétaires. Un conseiller pourra vous indiquer ce qui s'applique à votre cas.</p>}
         </>
@@ -221,8 +228,8 @@ export default function Funnel() {
           <h2 className="fq-q">Quel type de logement habitez-vous ?</h2>
           <select aria-label="Quel type de logement habitez-vous ?" value={a.type} onChange={(e) => set("type", e.target.value)}>
             <option value="">Sélectionner…</option>
-            <option value="maison">🏡 Maison individuelle</option>
-            <option value="appartement">🏢 Appartement / copropriété</option>
+            <option value="maison">Maison individuelle</option>
+            <option value="appartement">Appartement / copropriété</option>
           </select>
         </>
       )}
@@ -231,9 +238,9 @@ export default function Funnel() {
           <h2 className="fq-q">Votre chauffage actuel fonctionne à quelle énergie ?</h2>
           <select aria-label="Votre chauffage actuel fonctionne à quelle énergie ?" value={a.chauff} onChange={(e) => set("chauff", e.target.value)}>
             <option value="">Sélectionner…</option>
-            <option value="gaz">🔥 Gaz naturel</option>
-            <option value="fioul">🛢️ Fioul</option>
-            <option value="electrique_autre">⚡ Électrique / autre (bois, granulés…)</option>
+            <option value="gaz">Gaz naturel</option>
+            <option value="fioul">Fioul</option>
+            <option value="electrique_autre">Électrique / autre (bois, granulés…)</option>
           </select>
         </>
       )}
