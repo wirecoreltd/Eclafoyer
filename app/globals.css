@@ -194,7 +194,7 @@ input[aria-invalid=true]{border-color:var(--err)}
 /* ============ Refonte : en-tête, bandeau, mobile, merci ============ */
 .bar-r{display:flex;align-items:center;gap:14px}
 .topphone{display:inline-flex;align-items:center;gap:8px;font-weight:800;font-size:15px;text-decoration:none;color:var(--teal)}
-@media(max-width:640px){.topphone{display:none}}
+@media(max-width:640px){.tp-num{display:none}.topphone{width:42px;height:42px;justify-content:center;border:2px solid var(--teal);border-radius:50%}}
 .notice{background:var(--leaf-l);border-bottom:1px solid var(--line);font-size:13px;text-align:center;padding:8px 0;color:var(--ink)}
 .notice a{font-weight:800;color:var(--teal)}
 .ph{display:grid;place-items:center}
