@@ -227,7 +227,7 @@ export default function Home() {
         <div className="foot-in">
           <b>{nom()}</b>
           {(SITE.adresse || SITE.siret) && <div>{[SITE.adresse, SITE.siret && `SIRET ${SITE.siret}`].filter(Boolean).join(" · ")}</div>}
-          {(SITE.tel || SITE.email) && <div>{SITE.tel && <a href={telHref(SITE.tel)}>{SITE.tel}</a>}{SITE.tel && SITE.email && " · "}{SITE.email && <a href={`mailto:${SITE.email}`}>{SITE.email}</a>}</div>}
+         {SITE.email && <div><a href={`mailto:${SITE.email}`}>{SITE.email}</a></div>}
           <div>{SITE.horaires}</div>
           <div className="foot-l">© {new Date().getFullYear()} {nom()} · <a href="/mentions-legales">Mentions légales</a> · <a href="/confidentialite">Politique de confidentialité</a></div>
         </div>
