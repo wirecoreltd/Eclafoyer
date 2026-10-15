@@ -7,7 +7,8 @@ const CFG = {
   siret: "",                            // ex. "123 456 789 00012"
   adresse: "",                          // ex. "12 rue X, 75000 Paris"
   horaires: "",
-  dpo: "",                              // e-mail pour exercer ses droits RGPD (vide = e-mail de contact)
+  dpo: "",       
+  certif: "RGE QualiPAC & QualiPV",
   installateurs: "100+",                // à ne garder que si c'est exact et prouvable ; vide = non affiché
 };
 // CONFIG = valeurs brutes saisies ci-dessus (vides si non remplies) ; SITE = valeurs avec repli, utilisées par le formulaire.
