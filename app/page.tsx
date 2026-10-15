@@ -11,7 +11,9 @@ const Tick = ({ size = 14 }: { size?: number }) => (<span className="tick"><Icon
 
 // Nombre d'installateurs : modifiez-le dans lib/site.ts (vide = les mentions disparaissent).
 const NB = SITE.installateurs;
-const RESEAU_TXT = NB ? `${NB} installateurs partenaires à travers la France` : "Des installateurs partenaires à travers la France";
+const CERTIF = SITE.certif;
+const PLUS = NB ? (NB.endsWith("+") ? `plus de ${NB.slice(0, -1)}` : NB) : "";
+const RESEAU_TXT = NB ? `Nous travaillons avec ${PLUS} installateurs à travers la France` : "Nous travaillons avec des installateurs à travers la France";
 
 const PRODUITS = [
   { titre: "Chauffage", sous: "Moins d'électricité, plus de confort", d: "M12 2c1 4 5 5 5 10a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-4-1-6 1-9z",
@@ -54,7 +56,7 @@ const FAQ = [
   ["Est-ce vraiment gratuit ?", "Oui. La vérification d'éligibilité est gratuite et ne vous engage à rien. Vous décidez ensuite."],
   ["Que veut dire « 1 € symbolique » ?", "Selon votre profil de revenus, les aides publiques peuvent couvrir l'essentiel du coût de l'installation. Le reste à charge exact figure sur le devis, que vous recevez avant tout engagement. L'offre est soumise à conditions et à validation de votre dossier."],
   ["Qui va m'appeler ?", `Un conseiller de ${nom()} vous rappelle à la date et à l'heure choisies, pour confirmer votre demande et vous mettre en relation avec un installateur partenaire de votre secteur.`],
-  ["Qui réalise les travaux ?", NB ? `Nous travaillons avec ${NB} installateurs partenaires à travers la France. C'est l'installateur qui étudie votre projet, établit le devis et réalise les travaux.` : "Nous travaillons avec des installateurs partenaires à travers la France. C'est l'installateur qui étudie votre projet, établit le devis et réalise les travaux."],
+  ["Qui réalise les travaux ?", `Nous travaillons avec ${NB ? PLUS : "des"} installateurs à travers la France${CERTIF ? `, entreprises certifiées ${CERTIF}` : ""}. C'est l'installateur qui étudie votre projet, établit le devis et réalise les travaux.`],
   ["Pourquoi demander mes revenus ?", "Les aides dépendent de votre revenu fiscal de référence et de la taille de votre foyer. Vous pouvez aussi ne pas le renseigner : l'installateur le vérifiera avec vous."],
   ["Que deviennent mes données ?", "Elles servent à traiter votre demande et, avec votre accord, sont transmises à un installateur partenaire. Rien n'est enregistré tant que vous n'avez pas validé votre demande de rappel. Détails dans la politique de confidentialité."],
 ];
@@ -68,7 +70,7 @@ export default function Home() {
           <a href="#comment">Comment ça marche</a><a href="#avantages">Avantages</a><a href="#garanties">Nos engagements</a><a href="#faq">FAQ</a>
         </nav>
         <div className="bar-r">
-          {SITE.tel && <a className="topphone" href={telHref(SITE.tel)}><Icon d={PHONE} size={18} />{SITE.tel}</a>}
+          {SITE.tel && <a className="topphone" href={telHref(SITE.tel)}><Icon d={PHONE} size={18} /><span className="tp-num">{SITE.tel}</span></a>}
           <a className="cta-btn sm" href="#simulateur">Je vérifie</a>
         </div>
       </div></header>
@@ -80,7 +82,7 @@ export default function Home() {
         <section className="hero">
           <div className="wrap hero-in">
             <div className="hero-txt">
-              {NB && <div className="netchip"><b>{NB}</b> installateurs partenaires partout en France</div>}
+              {NB && <div className="netchip"><b>{NB}</b><span>Nous travaillons avec {PLUS} installateurs à travers la France{CERTIF && <>, <span className="nc-c">entreprises certifiées {CERTIF}</span></>}</span></div>}
               <h1>Pompe à chaleur à <em>1 € symbolique</em> : vérifiez votre éligibilité</h1>
               <p className="lead">Répondez à quelques questions en 2 minutes : votre profil s'affiche tout de suite, puis un conseiller vous rappelle à l'heure de votre choix.</p>
               <ul className="ticks">
@@ -168,7 +170,7 @@ export default function Home() {
               <div>
                 {NB ? <div className="net-num">{NB}</div> : null}
                 <div className="net-lbl">{RESEAU_TXT}</div>
-                <p className="net-sub">Un réseau national pour trouver un professionnel près de chez vous.</p>
+                <p className="net-sub">{CERTIF ? `Des entreprises certifiées ${CERTIF}, pour trouver un professionnel près de chez vous.` : "Un réseau national pour trouver un professionnel près de chez vous."}</p>
               </div>
               <div className="net-list">
                 {GARANTIES.map(([t, d]) => (<div className="net-item" key={t}><Tick size={18} /><div><b>{t}</b><p>{d}</p></div></div>))}
@@ -227,7 +229,7 @@ export default function Home() {
         <div className="foot-in">
           <b>{nom()}</b>
           {(SITE.adresse || SITE.siret) && <div>{[SITE.adresse, SITE.siret && `SIRET ${SITE.siret}`].filter(Boolean).join(" · ")}</div>}
-         {SITE.email && <div><a href={`mailto:${SITE.email}`}>{SITE.email}</a></div>}
+          {SITE.email && <div><a href={`mailto:${SITE.email}`}>{SITE.email}</a></div>}
           <div>{SITE.horaires}</div>
           <div className="foot-l">© {new Date().getFullYear()} {nom()} · <a href="/mentions-legales">Mentions légales</a> · <a href="/confidentialite">Politique de confidentialité</a></div>
         </div>
