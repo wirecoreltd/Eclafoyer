@@ -277,3 +277,19 @@ input[aria-invalid=true]{border-color:var(--err)}
 .fq label .err{display:block;margin-top:4px;font-size:12.5px}
 
 .netchip{border-radius:18px;line-height:1.35;max-width:560px}.netchip b{flex:none}.netchip .nc-c{color:var(--teal)}
+
+/* ============ Pied de page (fond clair, logo à gauche · copyright au centre · liens à droite) ============ */
+.foot{background:#fff;color:#4A5E62;border-top:1px solid var(--line);padding:22px 32px;text-align:left;font-size:14px;font-weight:400}
+.foot a{color:inherit;font-weight:inherit;text-decoration:none}
+.foot a:hover{text-decoration:underline}
+.foot-row{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:20px;max-width:1160px;margin:0 auto}
+.foot-brand{justify-self:start;display:inline-block;line-height:0}
+.foot-logo{height:34px;width:auto}
+.foot-c{justify-self:center;text-align:center}
+.foot-r{justify-self:end;text-align:right}
+@media(max-width:760px){
+  .foot{padding:24px 16px 96px}
+  .foot-row{grid-template-columns:1fr;justify-items:center;gap:12px}
+  .foot-brand,.foot-c,.foot-r{justify-self:center;text-align:center}
+  .foot-r{display:flex;flex-direction:column;gap:4px}.foot-dot{display:none}
+}
