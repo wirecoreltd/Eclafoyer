@@ -218,7 +218,7 @@ export default function Funnel() {
           <p className="mut">Quelques questions pour savoir si vous pouvez bénéficier de l'offre pompe à chaleur. Un conseiller vous rappelle ensuite.</p>
           <p className="strong gratuit">✓ {GRATUIT}</p>
         <p className="strong gratuit">✓ {OFFICIEL}</p>
-          <h3 className="sub">Vos coordonnées</h3>
+          <h3 className="sub" style={{ marginTop: 28 }}>Vos coordonnées</h3>
           <div className="grid">
             {FIELDS.map(([k, label, ac, type]) => (
               <label key={k} className={k === "adresse" ? "full" : ""}>{label}{k === "email" ? "" : " *"}
