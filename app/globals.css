@@ -302,3 +302,8 @@ input[aria-invalid=true]{border-color:var(--err)}
 .chip:hover{border-color:var(--teal)}
 .chip.on{background:var(--teal);border-color:var(--teal);color:#fff}
 .chip-all{flex:1 1 100%;text-align:center}
+
+/* Message de résultat éligible : fond vert, texte blanc, bien visible */
+.res.ok{background:var(--teal);box-shadow:0 6px 18px rgba(15,107,107,.28)}
+.res.ok strong{color:#fff;font-size:20px}
+.res.ok small{color:#fff;opacity:.95;font-size:14px;line-height:1.45}
