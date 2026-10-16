@@ -150,10 +150,10 @@ export default function Funnel() {
   if (step === RESULT && res && done) {
     return (
       <div className="card" role="status">
-        <h2>Sondage finalisé, merci {f.prenom} !</h2>
-        <p>Un conseiller vous rappelle au numéro indiqué {joursLabel(jours)}, entre {heureLabel(heure)}.</p>
-        <p className="strong gratuit">✓ {GRATUIT}</p>
-        <p className="strong gratuit">✓ {OFFICIEL}</p>
+        <h2>Merci {f.prenom}, c’est tout bon !</h2>
+        <p>Un conseiller vous rappelle au numéro indiqué {joursLabel(jours)}, entre {heureLabel(heure)}, pour étudier votre projet avec vous.</p>
+        <p className="strong gratuit">✓ Gratuit et sans engagement.</p>
+        <p className="strong gratuit">✓ Vous gardez le dernier mot sur votre projet.</p>
       </div>
     );
   }
@@ -218,7 +218,7 @@ export default function Funnel() {
           <p className="mut">Quelques questions pour savoir si vous pouvez bénéficier de l'offre pompe à chaleur. Un conseiller vous rappelle ensuite.</p>
           <p className="strong gratuit">✓ {GRATUIT}</p>
         <p className="strong gratuit">✓ {OFFICIEL}</p>
-          <h3 className="sub">Vos coordonnées</h3>
+          <h3 className="sub" style={{ marginTop: 28 }}>Vos coordonnées</h3>
           <div className="grid">
             {FIELDS.map(([k, label, ac, type]) => (
               <label key={k} className={k === "adresse" ? "full" : ""}>{label}{k === "email" ? "" : " *"}
