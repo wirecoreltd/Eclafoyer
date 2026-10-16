@@ -86,8 +86,6 @@ export default function Home() {
         </div>
       </div></header>
 
-      <div className="notice"><div className="wrap">Avant de vous engager, le service public vous informe gratuitement sur les aides : <a href="https://france-renov.gouv.fr" target="_blank" rel="noopener noreferrer">france-renov.gouv.fr</a></div></div>
-
       <main id="top">
         {/* 1. Hero */}
         <section className="hero">
@@ -259,6 +257,8 @@ export default function Home() {
             {SITE.tel && <p className="final-tel">ou appelez-nous : <a href={telHref(SITE.tel)}>{SITE.tel}</a><br /><small>{SITE.horaires}</small></p>}
           </div>
         </section>
+
+        <div className="notice notice-end"><div className="wrap">Avant de vous engager, le service public vous informe gratuitement sur les aides : <a href="https://france-renov.gouv.fr" target="_blank" rel="noopener noreferrer">france-renov.gouv.fr</a></div></div>
       </main>
 
       <footer className="foot">
