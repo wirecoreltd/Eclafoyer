@@ -39,6 +39,17 @@ const ETAPES = [
   { d: "M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.9M16 3.1a4 4 0 010 7.8", t: "Mise en relation", s: "Un installateur partenaire de votre secteur étudie votre projet." },
 ];
 
+const AIDES = [
+  { d: "M3 11l9-8 9 8M5 10v10h14V10", t: "MaPrimeRénov’", s: "Aide principale de l’État, calculée selon vos revenus et le gain énergétique du projet.",
+    points: ["PAC air/eau : jusqu’à 5 000 €", "PAC géothermique : jusqu’à 11 000 €", "Montant variable selon vos revenus", "Versée après les travaux"] },
+  { d: "M13 2L4 14h7l-1 8 9-12h-7z", t: "Prime CEE", s: "Certificats d’économies d’énergie, financés par les fournisseurs d’énergie.",
+    points: ["Cumulable avec MaPrimeRénov’", "Versée sous forme de prime ou de remise", "Bonifiée pour les ménages modestes"] },
+  { d: "M19 5L5 19M7.5 9a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM16.5 18a1.5 1.5 0 100-3 1.5 1.5 0 000 3z", t: "TVA 5,5 %", s: "Taux réduit appliqué directement sur la facture pour les travaux d’amélioration énergétique.",
+    points: ["Sur le matériel et la main-d’œuvre", "Logement de plus de 2 ans", "Appliquée par l’entreprise RGE"] },
+  { d: "M12 3c4.4 0 8 1.3 8 3s-3.6 3-8 3-8-1.3-8-3 3.6-3 8-3zM4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6", t: "Éco-PTZ", s: "Prêt à taux zéro pour financer le reste à charge, sans condition de ressources.",
+    points: ["Jusqu’à 15 000 € pour une PAC seule", "Jusqu’à 50 000 € en rénovation globale, sur 20 ans maximum", "0 % d’intérêts"] },
+];
+
 const GARANTIES = [
   ["Vérification gratuite", "Aucun paiement n'est demandé pour savoir si vous êtes éligible."],
   ["Rien n'est signé à la fin", "L'installateur étudie votre projet et vous remet un devis. Vous décidez librement."],
@@ -67,7 +78,7 @@ export default function Home() {
       <header className="top"><div className="wrap bar">
         <a href="#top" aria-label="EclaFoyer, accueil"><Image src="/logoEF.png" alt="EclaFoyer" width={168} height={42} priority /></a>
         <nav className="nav" aria-label="Navigation principale">
-          <a href="#comment">Comment ça marche</a><a href="#avantages">Avantages</a><a href="#garanties">Nos engagements</a><a href="#faq">FAQ</a>
+          <a href="#comment">Comment ça marche</a><a href="#avantages">Avantages</a><a href="#aides">Aides</a><a href="#garanties">Nos engagements</a><a href="#faq">FAQ</a>
         </nav>
         <div className="bar-r">
           {SITE.tel && <a className="topphone" href={telHref(SITE.tel)}><Icon d={PHONE} size={18} /><span className="tp-num">{SITE.tel}</span></a>}
@@ -159,6 +170,32 @@ export default function Home() {
               ))}
             </div>
             <p className="fine center" style={{ marginTop: 26 }}>Les performances varient selon le logement, l'équipement choisi et son installation.</p>
+          </div>
+        </section>
+
+        {/* 5b. Aides */}
+        <section className="sec" id="aides" style={{ paddingTop: 0 }}>
+          <div className="wrap">
+            <div className="aides">
+              <div className="aides-h">
+                <span className="eyebrow">Aides</span>
+                <h2>Les aides pour financer votre projet</h2>
+                <p>Plusieurs aides peuvent se cumuler pour réduire le coût de votre pompe à chaleur.</p>
+              </div>
+              <div className="aides-list">
+                {AIDES.map((a) => (
+                  <article className="aide" key={a.t}>
+                    <div className="aide-l">
+                      <span className="aide-ic"><Icon d={a.d} size={24} color="#7DB955" /></span>
+                      <div><h3>{a.t}</h3><p>{a.s}</p></div>
+                    </div>
+                    <ul className="aide-r">{a.points.map((t) => (<li key={t}><Icon d={CHECK} size={16} color="#7DB955" sw={3} />{t}</li>))}</ul>
+                  </article>
+                ))}
+              </div>
+              <p className="center"><a className="cta-btn" href="#simulateur">Vérifier mon éligibilité</a></p>
+              <p className="aides-fine">Montants indicatifs, sous conditions et susceptibles d’évoluer. Informations officielles : <a href="https://france-renov.gouv.fr" target="_blank" rel="noopener noreferrer">france-renov.gouv.fr</a></p>
+            </div>
           </div>
         </section>
 
