@@ -307,3 +307,6 @@ input[aria-invalid=true]{border-color:var(--err)}
 .res.ok{background:var(--teal);box-shadow:0 6px 18px rgba(15,107,107,.28)}
 .res.ok strong{color:#fff;font-size:20px}
 .res.ok small{color:#fff;opacity:.95;font-size:14px;line-height:1.45}
+
+/* Mentions rassurantes en bleu */
+.strong.gratuit{color:#1D4ED8;margin-bottom:4px}

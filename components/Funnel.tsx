@@ -17,6 +17,7 @@ const FIELDS: [string, string, string, string][] = [
 const CONSENT = () =>
   `J'accepte d'être contacté(e) par téléphone par ${nom()} au sujet de ma demande, et que les informations saisies (dont mes revenus) soient utilisées pour étudier mon éligibilité. Mes données sont conservées 3 ans maximum ; je peux exercer mes droits en écrivant à ${dpoMail()}.`;
 const GRATUIT = "Ce sondage est totalement gratuit et ne vous engage à rien.";
+const OFFICIEL = "Simulateur officiel · MaPrimeRénov' 2026";
 const HEURES = ["10:00-12:00", "12:00-14:00", "14:00-16:00", "16:00-18:00", "18:00-20:00"];
 const JOURS: [string, string][] = [["toute_la_semaine", "Je suis disponible toute la semaine"], ["lundi", "Lundi"], ["mardi", "Mardi"], ["mercredi", "Mercredi"], ["jeudi", "Jeudi"], ["vendredi", "Vendredi"]];
 const SURFACES = ["Moins de 70 m²", "Entre 70 et 90 m²", "Plus de 90 m²"]; // l'équivalent est enregistré côté serveur
@@ -151,7 +152,8 @@ export default function Funnel() {
       <div className="card" role="status">
         <h2>Sondage finalisé, merci {f.prenom} !</h2>
         <p>Un conseiller vous rappelle au numéro indiqué {joursLabel(jours)}, entre {heureLabel(heure)}.</p>
-        <p className="strong">✓ {GRATUIT}</p>
+        <p className="strong gratuit">✓ {GRATUIT}</p>
+        <p className="strong gratuit">✓ {OFFICIEL}</p>
       </div>
     );
   }
@@ -214,7 +216,8 @@ export default function Funnel() {
         <>
           <h2>Vérifiez votre éligibilité</h2>
           <p className="mut">Quelques questions pour savoir si vous pouvez bénéficier de l'offre pompe à chaleur. Un conseiller vous rappelle ensuite.</p>
-          <p className="strong">✓ {GRATUIT}</p>
+          <p className="strong gratuit">✓ {GRATUIT}</p>
+        <p className="strong gratuit">✓ {OFFICIEL}</p>
           <h3 className="sub">Vos coordonnées</h3>
           <div className="grid">
             {FIELDS.map(([k, label, ac, type]) => (
