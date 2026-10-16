@@ -2,7 +2,7 @@
 // Un champ laissé vide n'est simplement pas affiché (ex. : pas de téléphone = pas de bouton « Appeler »).
 const CFG = {
   societe: "",                          // raison sociale exacte, ex. "EclaFoyer SAS" (vide = « EclaFoyer »)
-  tel: "",                              // ex. "06 12 34 56 78"
+  tel: "07 57 82 97 89",                              // ex. "06 12 34 56 78"
   email: "",                            // ex. "contact@eclafoyer.fr"
   siret: "",                            // ex. "123 456 789 00012"
   adresse: "",                          // ex. "12 rue X, 75000 Paris"
