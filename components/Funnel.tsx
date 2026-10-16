@@ -17,11 +17,12 @@ const FIELDS: [string, string, string, string][] = [
 const CONSENT = () =>
   `J'accepte d'être contacté(e) par téléphone par ${nom()} au sujet de ma demande, et que les informations saisies (dont mes revenus) soient utilisées pour étudier mon éligibilité. Mes données sont conservées 3 ans maximum ; je peux exercer mes droits en écrivant à ${dpoMail()}.`;
 const GRATUIT = "Ce sondage est totalement gratuit et ne vous engage à rien.";
-const HEURES = ["09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00"];
+const HEURES = ["10:00-12:00", "12:00-14:00", "14:00-16:00", "16:00-18:00", "18:00-20:00"];
+const JOURS: [string, string][] = [["toute_la_semaine", "Je suis disponible toute la semaine"], ["lundi", "Lundi"], ["mardi", "Mardi"], ["mercredi", "Mercredi"], ["jeudi", "Jeudi"], ["vendredi", "Vendredi"]];
 const SURFACES = ["Moins de 70 m²", "Entre 70 et 90 m²", "Plus de 90 m²"]; // l'équivalent est enregistré côté serveur
 const ANNEES: [string, string][] = [["apres_2009", "2009 ou après (moins de 15 ans)"], ["avant_2009", "Avant 2009 (plus de 15 ans)"]];
-const heureLabel = (h: string) => h.replace(":", "h");
-const dateLabel = (d: string) => new Date(d + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+const heureLabel = (h: string) => h.replace(/:00/g, "h").replace("-", " – ");
+const joursLabel = (js: string[]) => js.includes("toute_la_semaine") ? "toute la semaine" : js.map((j) => JOURS.find(([k]) => k === j)?.[1].toLowerCase()).filter(Boolean).join(", ");
 const BADGE: Record<string, [string, string]> = { bleu: ["#1D4ED8", "#fff"], jaune: ["#F59E2B", "#0E2A2F"], violet: ["#7C3AED", "#fff"], rose: ["#DB2777", "#fff"] };
 const FR_PHONE = /^(?:(?:\+|00)33|0)\s*[1-9](?:[\s.\-]*\d{2}){4}$/;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -46,7 +47,7 @@ export default function Funnel() {
   const [a, setA] = useState<A>(A0);
   const [consent, setConsent] = useState(false);
   const [hp, setHp] = useState("");
-  const [date, setDate] = useState("");
+  const [jours, setJours] = useState<string[]>([]);
   const [heure, setHeure] = useState("");
   const [errs, setErrs] = useState<Record<string, string>>({});
   const [msg, setMsg] = useState("");
@@ -121,18 +122,22 @@ export default function Funnel() {
   }
   const back = () => { setMsg(""); setStep(Math.max(0, step - 1)); };
 
+  // « Toute la semaine » exclut les jours précis, et inversement.
+  const toggleJour = (k: string) => setJours((cur) =>
+    k === "toute_la_semaine" ? (cur.includes(k) ? [] : [k])
+      : (cur.includes(k) ? cur.filter((x) => x !== k) : [...cur.filter((x) => x !== "toute_la_semaine"), k]));
+
   // Choix du créneau : complète la demande déjà enregistrée.
   async function finalize() {
     setMsg("");
-    if (!date || !heure) return setMsg("Choisissez la date et l'heure de votre rappel.");
-    if (date < new Date().toISOString().slice(0, 10)) return setMsg("Choisissez une date à partir d'aujourd'hui.");
+    if (!jours.length || !heure) return setMsg("Choisissez vos jours de disponibilité et un créneau horaire.");
     if (!consent) return setMsg("Cochez la case ci-dessus pour finaliser le sondage.");
     if (!lead) return setMsg("Une erreur est survenue. Réessayez.");
     setBusy(true);
     try {
       const r = await fetch("/api/leads/rappel", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: lead.id, token: lead.token, rappel_date: date, rappel_heure: heure, consent: true, website: hp }),
+        body: JSON.stringify({ id: lead.id, token: lead.token, rappel_jours: jours, rappel_heure: heure, consent: true, website: hp }),
       });
       const j = await r.json().catch(() => ({}));
       if (r.ok) { setDone(true); setBusy(false); return; }
@@ -145,7 +150,7 @@ export default function Funnel() {
     return (
       <div className="card" role="status">
         <h2>Sondage finalisé, merci {f.prenom} !</h2>
-        <p>Un conseiller vous rappelle au numéro indiqué le {dateLabel(date)} à {heureLabel(heure)}.</p>
+        <p>Un conseiller vous rappelle au numéro indiqué {joursLabel(jours)}, entre {heureLabel(heure)}.</p>
         <p className="strong">✓ {GRATUIT}</p>
       </div>
     );
@@ -178,13 +183,16 @@ export default function Funnel() {
           )}
         </div>
 
-        <p className="strong" style={{ margin: "18px 0 10px" }}>Un conseiller prendra contact avec vous à l'heure de votre choix afin de discuter de la faisabilité de votre projet.</p>
+        <p className="strong" style={{ margin: "18px 0 10px" }}>Un conseiller prendra contact avec vous au créneau de votre choix afin de discuter de la faisabilité de votre projet.</p>
         <label className="chk" style={{ marginTop: 0, marginBottom: 14 }}><input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} /><span>{CONSENT()}</span></label>
-        <div className="grid">
-          <label>Date *
-            <input type="date" min={new Date().toISOString().slice(0, 10)} value={date} onChange={(e) => setDate(e.target.value)} />
-          </label>
-          <label>Heure *
+        <div className="dispo">
+          <span className="dispo-t">Vos disponibilités * <small>(plusieurs choix possibles)</small></span>
+          <div className="chips" role="group" aria-label="Jours de disponibilité">
+            {JOURS.map(([k, l]) => (
+              <button type="button" key={k} className={"chip" + (k === "toute_la_semaine" ? " chip-all" : "") + (jours.includes(k) ? " on" : "")} aria-pressed={jours.includes(k)} onClick={() => toggleJour(k)}>{l}</button>
+            ))}
+          </div>
+          <label style={{ marginTop: 12 }}>Créneau horaire *
             <select value={heure} onChange={(e) => setHeure(e.target.value)}>
               <option value="">Sélectionner…</option>{HEURES.map((h) => <option key={h} value={h}>{heureLabel(h)}</option>)}
             </select>

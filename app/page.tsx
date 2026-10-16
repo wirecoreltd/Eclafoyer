@@ -35,7 +35,7 @@ const ETAPES = [
   { d: "M12 2a10 10 0 100 20 10 10 0 000-20zM2 12h20M12 2c3 3 4 6.5 4 10s-1 7-4 10c-3-3-4-6.5-4-10s1-7 4-10z", t: "Vous découvrez l'offre", s: "Vous en apprenez plus sur la pompe à chaleur et ses avantages." },
   { d: "M9 4h6v3H9zM7 5H5v16h14V5h-2M8 12h8M8 16h5", t: "Vous répondez aux questions", s: "Quelques minutes suffisent pour renseigner votre situation." },
   { d: "M5 3h14v18H5zM8 7h8M8 11h2M12 11h2M8 15h2M12 15h2", t: "Vous découvrez votre profil", s: "Nous estimons votre éligibilité : résultat immédiat." },
-  { d: PHONE, t: "Un conseiller vous rappelle", s: "À la date et à l'heure que vous avez choisies." },
+  { d: PHONE, t: "Un conseiller vous rappelle", s: "Au créneau que vous avez choisi." },
   { d: "M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.9M16 3.1a4 4 0 010 7.8", t: "Mise en relation", s: "Un installateur partenaire de votre secteur étudie votre projet." },
 ];
 
@@ -55,7 +55,7 @@ const CONDITIONS = [
 const FAQ = [
   ["Est-ce vraiment gratuit ?", "Oui. La vérification d'éligibilité est gratuite et ne vous engage à rien. Vous décidez ensuite."],
   ["Que veut dire « 1 € symbolique » ?", "Selon votre profil de revenus, les aides publiques peuvent couvrir l'essentiel du coût de l'installation. Le reste à charge exact figure sur le devis, que vous recevez avant tout engagement. L'offre est soumise à conditions et à validation de votre dossier."],
-  ["Qui va m'appeler ?", `Un conseiller de ${nom()} vous rappelle à la date et à l'heure choisies, pour confirmer votre demande et vous mettre en relation avec un installateur partenaire de votre secteur.`],
+  ["Qui va m'appeler ?", `Un conseiller de ${nom()} vous rappelle au créneau choisi, pour confirmer votre demande et vous mettre en relation avec un installateur partenaire de votre secteur.`],
   ["Qui réalise les travaux ?", `Nous travaillons avec ${NB ? PLUS : "des"} installateurs à travers la France${CERTIF ? `, entreprises certifiées ${CERTIF}` : ""}. C'est l'installateur qui étudie votre projet, établit le devis et réalise les travaux.`],
   ["Pourquoi demander mes revenus ?", "Les aides dépendent de votre revenu fiscal de référence et de la taille de votre foyer. Vous pouvez aussi ne pas le renseigner : l'installateur le vérifiera avec vous."],
   ["Que deviennent mes données ?", "Elles servent à traiter votre demande et, avec votre accord, sont transmises à un installateur partenaire. Rien n'est enregistré tant que vous n'avez pas validé votre demande de rappel. Détails dans la politique de confidentialité."],
@@ -82,11 +82,10 @@ export default function Home() {
         <section className="hero">
           <div className="wrap hero-in">
             <div className="hero-txt">
-              {NB && <div className="netchip"><b>{NB}</b><span>Nous travaillons avec {PLUS} installateurs à travers la France{CERTIF && <>, <span className="nc-c">entreprises certifiées {CERTIF}</span></>}</span></div>}
               <h1>Pompe à chaleur à <em>1 € symbolique</em> : vérifiez votre éligibilité</h1>
-              <p className="lead">Répondez à quelques questions en 2 minutes : votre profil s'affiche tout de suite, puis un conseiller vous rappelle à l'heure de votre choix.</p>
+              <p className="lead">Répondez à quelques questions en 2 minutes : votre profil s'affiche tout de suite, puis un conseiller vous rappelle au créneau de votre choix.</p>
               <ul className="ticks">
-                {["Vérification gratuite", "Sans engagement, rien n'est signé", "Un rappel à la date et l'heure que vous choisissez"].map((t) => (<li key={t}><Tick />{t}</li>))}
+                {["Vérification gratuite", "Sans engagement, rien n'est signé", "Un rappel au créneau que vous choisissez", `${RESEAU_TXT}${CERTIF ? `, entreprises certifiées ${CERTIF}` : ""}`].map((t) => (<li key={t}><Tick />{t}</li>))}
               </ul>
               <p className="fine">Offre soumise à conditions de ressources et à validation de votre dossier.</p>
             </div>
@@ -132,7 +131,7 @@ export default function Home() {
               <h2>Pourquoi choisir <em>{nom()}</em> ?</h2>
               <p>Notre objectif : vous faire gagner du temps. En quelques minutes, vous savez si vous pouvez prétendre aux aides, puis vous êtes mis en relation avec un installateur partenaire de votre secteur.</p>
               <ul className="ticks">
-                {["Une vérification 100 % gratuite et sans engagement", "Un rappel à la date et à l'heure de votre choix", "Un installateur partenaire proche de chez vous"].map((t) => (<li key={t}><Tick />{t}</li>))}
+                {["Une vérification 100 % gratuite et sans engagement", "Un rappel au créneau de votre choix", "Un installateur partenaire proche de chez vous"].map((t) => (<li key={t}><Tick />{t}</li>))}
               </ul>
             </div>
             <Image className="why-img" src="/images/famille.jpg" alt="Une famille souriante dans son salon" width={700} height={496} />

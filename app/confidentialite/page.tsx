@@ -10,7 +10,7 @@ export default function Confidentialite() {
       <p>[NOM DE VOTRE SOCIÉTÉ], [Adresse], SIREN [SIREN]. Contact pour toute question relative à vos données : <b>[E-MAIL DPO]</b>.</p>
 
       <h2>Données collectées</h2>
-      <p>Via le sondage, nous collectons : nom, prénom, adresse postale, téléphone, e-mail (facultatif), statut de propriétaire, surface habitable, nombre de personnes du foyer fiscal, revenu fiscal de référence, éventuelle aide MaPrimeRénov' perçue ces 5 dernières années, ainsi que la date et l'heure de rappel choisies.</p>
+      <p>Via le sondage, nous collectons : nom, prénom, adresse postale, téléphone, e-mail (facultatif), statut de propriétaire, surface habitable, nombre de personnes du foyer fiscal, revenu fiscal de référence, éventuelle aide MaPrimeRénov' perçue ces 5 dernières années, ainsi que les jours et le créneau horaire de rappel choisis.</p>
 
       <h2>Finalités et bases légales</h2>
       <ul>

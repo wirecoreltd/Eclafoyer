@@ -13,7 +13,7 @@ export async function POST(req: Request) {
   if (!parsed.success) {
     return NextResponse.json({ error: "Certains champs sont invalides.", fields: parsed.error.flatten().fieldErrors }, { status: 422 });
   }
-  const { website, consent: _c, preview, telephone, answers, rappel_date, rappel_heure, ...d } = parsed.data;
+  const { website, consent: _c, preview, telephone, answers, rappel_jours, rappel_heure, ...d } = parsed.data;
   if (website) return NextResponse.json({ ok: true, resultat: RESULTAT_GENERIQUE }); // champ piège : on ignore les robots
 
   // Le profil est calculé côté serveur : les barèmes ne sont jamais envoyés au navigateur.
@@ -41,7 +41,7 @@ export async function POST(req: Request) {
     zone: ev.zone,
     profil_maprimerenov: ev.profil,
     eligible_pac_1_euro: ev.resultat.eligible ? "oui" : "non",
-    rappel_date,
+    rappel_jours,
     rappel_heure,
     rappel_token: token,
   };

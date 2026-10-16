@@ -293,3 +293,12 @@ input[aria-invalid=true]{border-color:var(--err)}
   .foot-brand,.foot-c,.foot-r{justify-self:center;text-align:center}
   .foot-r{display:flex;flex-direction:column;gap:4px}.foot-dot{display:none}
 }
+
+/* Disponibilités de rappel (choix multiple) */
+.dispo{margin-bottom:6px}
+.dispo-t{display:block;font-weight:700;font-size:14px;margin-bottom:8px}.dispo-t small{font-weight:500;color:#6b7b7e}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font:inherit;font-size:14px;font-weight:600;padding:9px 14px;border-radius:999px;border:1.5px solid var(--line);background:#fff;color:#0E2A2F;cursor:pointer;transition:background .15s,border-color .15s,color .15s}
+.chip:hover{border-color:var(--teal)}
+.chip.on{background:var(--teal);border-color:var(--teal);color:#fff}
+.chip-all{flex:1 1 100%;text-align:center}

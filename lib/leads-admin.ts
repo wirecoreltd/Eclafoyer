@@ -68,13 +68,13 @@ export const phoneNational = (p?: string | null) => (p ? p.replace(/^\+33/, "0")
 
 type Lead = Record<string, any>;
 export function leadsToCsv(leads: Lead[]): string {
-  const head = ["Date", "Prénom", "Nom", "Téléphone", "E-mail", "Adresse", "Code postal", "Ville", "Motif", "Statut", "Rappel (date)", "Rappel (heure)", "Propriétaire", "Surface (m²)", "Personnes foyer", "Revenu fiscal réf.", "MaPrimeRénov' 5 ans", "Zone", "Profil MaPrimeRénov'", "Éligible PAC 1 €", "Consentement à être appelé"];
+  const head = ["Date", "Prénom", "Nom", "Téléphone", "E-mail", "Adresse", "Code postal", "Ville", "Motif", "Statut", "Rappel (jours)", "Rappel (créneau)", "Propriétaire", "Surface (m²)", "Personnes foyer", "Revenu fiscal réf.", "MaPrimeRénov' 5 ans", "Zone", "Profil MaPrimeRénov'", "Éligible PAC 1 €", "Consentement à être appelé"];
   const rows = leads.map((l) => {
     const s = (l.simulation ?? {}) as Record<string, unknown>;
     return [
       new Date(l.created_at).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short", timeZone: "Europe/Paris" }),
       l.prenom, l.nom, phoneNational(l.telephone), l.email, l.adresse, l.code_postal, l.ville,
-      MOTIF_LABEL, l.statut, s.rappel_date, s.rappel_heure,
+      MOTIF_LABEL, l.statut, Array.isArray(s.rappel_jours) ? s.rappel_jours.join(" / ") : s.rappel_jours, s.rappel_heure,
       s.proprietaire, s.surface_habitable ?? s.surface_tranche, s.personnes_foyer_fiscal, s.revenu_fiscal_reference ?? s.revenu_tranche,
       s.maprimerenov_5_ans, s.zone, s.profil_maprimerenov, s.eligible_pac_1_euro, l.consent_at ? "oui" : "non",
     ].map(csvCell).join(";");
