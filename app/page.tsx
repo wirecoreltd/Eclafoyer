@@ -72,9 +72,16 @@ const FAQ = [
   ["Que deviennent mes données ?", "Elles servent à traiter votre demande et, avec votre accord, sont transmises à un installateur partenaire. Rien n'est enregistré tant que vous n'avez pas validé votre demande de rappel. Détails dans la politique de confidentialité."],
 ];
 
+const faqLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: FAQ.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+};
+
 export default function Home() {
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }} />
       <header className="top"><div className="wrap bar">
         <a href="#top" aria-label="EclaFoyer, accueil"><Image src="/logoEF.png" alt="EclaFoyer" width={168} height={42} priority /></a>
         <nav className="nav" aria-label="Navigation principale">
