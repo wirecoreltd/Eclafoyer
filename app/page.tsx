@@ -272,7 +272,7 @@ export default function Home() {
         <div className="foot-row">
           <a className="foot-brand" href="#top" aria-label="EclaFoyer, haut de page"><Image className="foot-logo" src="/logoEF.png" alt="EclaFoyer" width={136} height={34} /></a>
           <div className="foot-c">© {new Date().getFullYear()} {nom()} · Tous droits réservés</div>
-          <div className="foot-r">Mentions légales<span className="foot-dot"> · </span>Politique de confidentialité</div>
+          <div className="foot-r"><a href="/pompe-a-chaleur-1-euro">Conditions d’éligibilité</a><span className="foot-dot"> · </span><a href="/mentions-legales">Mentions légales</a><span className="foot-dot"> · </span><a href="/confidentialite">Politique de confidentialité</a></div>
         </div>
       </footer>
 
