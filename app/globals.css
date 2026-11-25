@@ -337,3 +337,13 @@ input[aria-invalid=true]{border-color:var(--err)}
 
 /* Bandeau France Rénov' placé sous le CTA final */
 .notice-end{margin:56px 0 -56px;border-top:1px solid var(--line);padding:14px 0}
+
+/* Pied de page : liens sur une seule ligne, texte plus petit */
+.foot-r{white-space:nowrap;font-size:12.5px}
+.foot-r .sm{display:none}
+@media(max-width:760px){
+  .foot-r{display:flex;flex-direction:row;flex-wrap:nowrap;justify-content:center;align-items:center;gap:0;font-size:11px}
+  .foot-r .foot-dot{display:inline;padding:0 5px}
+  .foot-r .lg{display:none}
+  .foot-r .sm{display:inline}
+}
